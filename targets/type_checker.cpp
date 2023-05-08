@@ -219,6 +219,10 @@ void mml::type_checker::do_next_node(mml::next_node *const node, int lvl) {
   // FIXME: currently empty in order to compile, isn't required for the first delivery
 }
 
+void mml::type_checker::do_return_node(mml::return_node *const node, int lvl) {
+  // FIXME: currently empty in order to compile, isn't required for the first delivery
+}
+
 //---------------------------------------------------------------------------
 
 void mml::type_checker::do_declaration_node(mml::declaration_node *const node, int lvl) {
