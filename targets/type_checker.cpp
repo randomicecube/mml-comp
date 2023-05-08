@@ -211,6 +211,10 @@ void mml::type_checker::do_if_else_node(mml::if_else_node *const node,
   node->condition()->accept(this, lvl + 4);
 }
 
+void mml::type_checker::do_stop_node(mml::stop_node *const node, int lvl) {
+  // FIXME: currently empty in order to compile, isn't required for the first delivery
+}
+
 //---------------------------------------------------------------------------
 
 void mml::type_checker::do_declaration_node(mml::declaration_node *const node, int lvl) {

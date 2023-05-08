@@ -208,3 +208,13 @@ void mml::xml_writer::do_if_else_node(mml::if_else_node *const node, int lvl) {
   closeTag("else", lvl + 2);
   closeTag(node, lvl);
 }
+
+void mml::xml_writer::do_stop_node(mml::stop_node * const node, int lvl) {
+  // FIXME: currently empty in order to compile, isn't required for the first delivery
+}
+
+//---------------------------------------------------------------------------
+
+void mml::xml_writer::do_declaration_node(mml::declaration_node * const node, int lvl) {
+  // FIXME: currently empty in order to compile, isn't required for the first delivery
+}
