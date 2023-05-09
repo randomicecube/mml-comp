@@ -238,3 +238,9 @@ void mml::xml_writer::do_declaration_node(mml::declaration_node * const node, in
 void mml::xml_writer::do_block_node(mml::block_node * const node, int lvl) {
   // FIXME: currently empty in order to compile, isn't required for the first delivery
 }
+
+//---------------------------------------------------------------------------
+
+void mml::xml_writer::do_input_node(mml::input_node * const node, int lvl) {
+  // FIXME: currently empty in order to compile, isn't required for the first delivery
+}
