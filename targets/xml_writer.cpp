@@ -223,6 +223,12 @@ void mml::xml_writer::do_return_node(mml::return_node * const node, int lvl) {
 
 //---------------------------------------------------------------------------
 
+void mml::xml_writer::do_nullptr_node(mml::nullptr_node * const node, int lvl) {
+  // FIXME: currently empty in order to compile, isn't required for the first delivery
+}
+
+//---------------------------------------------------------------------------
+
 void mml::xml_writer::do_declaration_node(mml::declaration_node * const node, int lvl) {
   // FIXME: currently empty in order to compile, isn't required for the first delivery
 }
