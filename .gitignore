@@ -31,3 +31,11 @@
 *.tab.c
 *.tab.h
 
+# MML output/binary files
+mml
+mml_parser.output
+
+# Flex-generated files
+mml_scanner.cpp
+.auto/
+
