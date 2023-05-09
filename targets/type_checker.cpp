@@ -246,3 +246,9 @@ void mml::type_checker::do_block_node(mml::block_node *const node, int lvl) {
 void mml::type_checker::do_input_node(mml::input_node *const node, int lvl) {
   // FIXME: currently empty in order to compile, isn't required for the first delivery
 }
+
+//---------------------------------------------------------------------------
+
+void mml::type_checker::do_identity_node(mml::identity_node *const node, int lvl) {
+  // FIXME: currently empty in order to compile, isn't required for the first delivery
+}
