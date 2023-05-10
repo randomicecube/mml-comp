@@ -334,3 +334,9 @@ void mml::postfix_writer::do_identity_node(mml::identity_node * const node, int 
 void mml::postfix_writer::do_sizeof_node(mml::sizeof_node * const node, int lvl) {
   // FIXME: currently empty in order to compile, isn't required for the first delivery
 }
+
+//---------------------------------------------------------------------------
+
+void mml::postfix_writer::do_index_node(mml::index_node * const node, int lvl) {
+  // FIXME: currently empty in order to compile, isn't required for the first delivery
+}
