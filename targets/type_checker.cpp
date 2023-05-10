@@ -270,3 +270,9 @@ void mml::type_checker::do_index_node(mml::index_node *const node, int lvl) {
 void mml::type_checker::do_stack_alloc_node(mml::stack_alloc_node *const node, int lvl) {
   // FIXME: currently empty in order to compile, isn't required for the first delivery
 }
+
+//---------------------------------------------------------------------------
+
+void mml::type_checker::do_address_of_node(mml::address_of_node *const node, int lvl) {
+  // FIXME: currently empty in order to compile, isn't required for the first delivery
+}
