@@ -262,3 +262,9 @@ void mml::xml_writer::do_sizeof_node(mml::sizeof_node * const node, int lvl) {
 void mml::xml_writer::do_index_node(mml::index_node * const node, int lvl) {
   // FIXME: currently empty in order to compile, isn't required for the first delivery
 }
+
+//---------------------------------------------------------------------------
+
+void mml::xml_writer::do_stack_alloc_node(mml::stack_alloc_node * const node, int lvl) {
+  // FIXME: currently empty in order to compile, isn't required for the first delivery
+}
