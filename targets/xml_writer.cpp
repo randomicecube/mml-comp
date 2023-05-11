@@ -265,3 +265,9 @@ void mml::xml_writer::do_stack_alloc_node(mml::stack_alloc_node * const node, in
 void mml::xml_writer::do_address_of_node(mml::address_of_node * const node, int lvl) {
   // FIXME: currently empty in order to compile, isn't required for the first delivery
 }
+
+//---------------------------------------------------------------------------
+
+void mml::xml_writer::do_function_call_node(mml::function_call_node * const node, int lvl) {
+  // FIXME: currently empty in order to compile, isn't required for the first delivery
+}
