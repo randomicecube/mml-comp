@@ -151,10 +151,11 @@ void mml::xml_writer::do_evaluation_node(mml::evaluation_node *const node,
 }
 
 void mml::xml_writer::do_print_node(mml::print_node *const node, int lvl) {
-  ASSERT_SAFE_EXPRESSIONS;
+  // FIXME: only works in the next delivery
+  /*ASSERT_SAFE_EXPRESSIONS;
   openTag(node, lvl);
   node->argument()->accept(this, lvl + 2);
-  closeTag(node, lvl);
+  closeTag(node, lvl);*/
 }
 
 //---------------------------------------------------------------------------
