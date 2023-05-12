@@ -5,23 +5,20 @@
 
 namespace mml {
 
-  /**
-   * Class for describing input nodes.
-   */
-  class input_node: public cdk::expression_node {
+/**
+ * Class for describing input nodes.
+ */
+class input_node : public cdk::expression_node {
 
-  public:
-    inline input_node(int lineno) :
-        cdk::expression_node(lineno) {
-    }
+public:
+  inline input_node(int lineno) : cdk::expression_node(lineno) {}
 
-  public:    
-    void accept(basic_ast_visitor *sp, int level) {
-      sp->do_input_node(this, level);
-    }
+public:
+  void accept(basic_ast_visitor *sp, int level) {
+    sp->do_input_node(this, level);
+  }
+};
 
-  };
-
-} // mml
+} // namespace mml
 
 #endif

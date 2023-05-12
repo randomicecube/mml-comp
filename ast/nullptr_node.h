@@ -5,22 +5,19 @@
 
 namespace mml {
 
-  /**
-   * Class for describing nullptr nodes.
-   */
-  class nullptr_node: public cdk::expression_node {
-  public:
-    inline nullptr_node(int lineno) :
-        cdk::expression_node(lineno) {
-    }
+/**
+ * Class for describing nullptr nodes.
+ */
+class nullptr_node : public cdk::expression_node {
+public:
+  inline nullptr_node(int lineno) : cdk::expression_node(lineno) {}
 
-  public:    
-    void accept(basic_ast_visitor *sp, int level) {
-      sp->do_nullptr_node(this, level);
-    }
+public:
+  void accept(basic_ast_visitor *sp, int level) {
+    sp->do_nullptr_node(this, level);
+  }
+};
 
-  };
-
-} // mml
+} // namespace mml
 
 #endif
