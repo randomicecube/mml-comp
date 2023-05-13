@@ -170,28 +170,14 @@ void mml::type_checker::do_assignment_node(cdk::assignment_node *const node,
 
 //---------------------------------------------------------------------------
 
-void mml::type_checker::do_program_node(mml::program_node *const node,
-                                        int lvl) {
-  // EMPTY
-}
-
 void mml::type_checker::do_evaluation_node(mml::evaluation_node *const node,
                                            int lvl) {
   node->argument()->accept(this, lvl + 2);
 }
 
 void mml::type_checker::do_print_node(mml::print_node *const node, int lvl) {
-  node->argument()->accept(this, lvl + 2);
-}
-
-//---------------------------------------------------------------------------
-
-void mml::type_checker::do_read_node(mml::read_node *const node, int lvl) {
-  try {
-    node->argument()->accept(this, lvl);
-  } catch (const std::string &id) {
-    throw "undeclared variable '" + id + "'";
-  }
+  // FIXME: only works in the next delivery
+  // node->argument()->accept(this, lvl + 2);
 }
 
 //---------------------------------------------------------------------------
@@ -210,3 +196,103 @@ void mml::type_checker::do_if_else_node(mml::if_else_node *const node,
                                         int lvl) {
   node->condition()->accept(this, lvl + 4);
 }
+
+void mml::type_checker::do_stop_node(mml::stop_node *const node, int lvl) {
+  // FIXME: currently empty in order to compile, isn't required for the first
+  // delivery
+}
+
+void mml::type_checker::do_next_node(mml::next_node *const node, int lvl) {
+  // FIXME: currently empty in order to compile, isn't required for the first
+  // delivery
+}
+
+void mml::type_checker::do_return_node(mml::return_node *const node, int lvl) {
+  // FIXME: currently empty in order to compile, isn't required for the first
+  // delivery
+}
+
+//---------------------------------------------------------------------------
+
+void mml::type_checker::do_nullptr_node(mml::nullptr_node *const node,
+                                        int lvl) {
+  // FIXME: currently empty in order to compile, isn't required for the first
+  // delivery
+}
+
+//---------------------------------------------------------------------------
+
+void mml::type_checker::do_declaration_node(mml::declaration_node *const node,
+                                            int lvl) {
+  // FIXME: currently empty in order to compile, isn't required for the first
+  // delivery
+}
+
+//---------------------------------------------------------------------------
+
+void mml::type_checker::do_block_node(mml::block_node *const node, int lvl) {
+  // FIXME: currently empty in order to compile, isn't required for the first
+  // delivery
+}
+
+//---------------------------------------------------------------------------
+
+void mml::type_checker::do_input_node(mml::input_node *const node, int lvl) {
+  // FIXME: currently empty in order to compile, isn't required for the first
+  // delivery
+}
+
+//---------------------------------------------------------------------------
+
+void mml::type_checker::do_identity_node(mml::identity_node *const node,
+                                         int lvl) {
+  // FIXME: currently empty in order to compile, isn't required for the first
+  // delivery
+}
+
+//---------------------------------------------------------------------------
+
+void mml::type_checker::do_sizeof_node(mml::sizeof_node *const node, int lvl) {
+  // FIXME: currently empty in order to compile, isn't required for the first
+  // delivery
+}
+
+//---------------------------------------------------------------------------
+
+void mml::type_checker::do_index_node(mml::index_node *const node, int lvl) {
+  // FIXME: currently empty in order to compile, isn't required for the first
+  // delivery
+}
+
+//---------------------------------------------------------------------------
+
+void mml::type_checker::do_stack_alloc_node(mml::stack_alloc_node *const node,
+                                            int lvl) {
+  // FIXME: currently empty in order to compile, isn't required for the first
+  // delivery
+}
+
+//---------------------------------------------------------------------------
+
+void mml::type_checker::do_address_of_node(mml::address_of_node *const node,
+                                           int lvl) {
+  // FIXME: currently empty in order to compile, isn't required for the first
+  // delivery
+}
+
+//---------------------------------------------------------------------------
+
+void mml::type_checker::do_function_call_node(
+    mml::function_call_node *const node, int lvl) {
+  // FIXME: currently empty in order to compile, isn't required for the first
+  // delivery
+}
+
+//---------------------------------------------------------------------------
+
+void mml::type_checker::do_function_definition_node(
+    mml::function_definition_node *const node, int lvl) {
+  // FIXME: currently empty in order to compile, isn't required for the first
+  // delivery
+}
+
