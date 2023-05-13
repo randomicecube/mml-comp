@@ -1,6 +1,7 @@
 #ifndef __MML_AST_EVALUATION_NODE_H__
 #define __MML_AST_EVALUATION_NODE_H__
 
+#include <cdk/ast/basic_node.h>
 #include <cdk/ast/expression_node.h>
 
 namespace mml {

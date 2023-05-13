@@ -2,6 +2,8 @@
 #define __MML_AST_DECLARATION_NODE_H__
 
 #include <cdk/ast/expression_node.h>
+#include <cdk/ast/typed_node.h>
+#include <string>
 
 namespace mml {
 
