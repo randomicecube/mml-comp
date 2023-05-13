@@ -347,3 +347,4 @@ void mml::postfix_writer::do_function_definition_node(
   // FIXME: currently empty in order to compile, isn't required for the first
   // delivery
 }
+
