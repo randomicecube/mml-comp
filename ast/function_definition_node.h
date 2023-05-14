@@ -25,7 +25,7 @@ public:
   }
 
   /**
-   * Cosntructor for the main function.
+   * Constructor for the main function.
    */
   inline function_definition_node(int lineno, mml::block_node *block)
       : cdk::expression_node(lineno), _block(block), _main(true) {
