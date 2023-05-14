@@ -19,15 +19,15 @@ public:
    * An empty sequence is automatically inserted to represent
    * the missing arguments.
    */
-  function_call_node(int lineno, cdk::expression_node *identifier)
+  inline function_call_node(int lineno, cdk::expression_node *identifier)
       : cdk::expression_node(lineno), _identifier(identifier),
         _arguments(new cdk::sequence_node(lineno)) {}
 
   /**
    * Constructor for a function call with arguments.
    */
-  function_call_node(int lineno, cdk::expression_node *identifier,
-                     cdk::sequence_node *arguments)
+  inline function_call_node(int lineno, cdk::expression_node *identifier,
+                            cdk::sequence_node *arguments)
       : cdk::expression_node(lineno), _identifier(identifier),
         _arguments(arguments) {}
 

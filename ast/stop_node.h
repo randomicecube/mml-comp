@@ -16,7 +16,7 @@ public:
       : cdk::basic_node(lineno), _level(level) {}
 
 public:
-  int level() { return _level; }
+  inline int level() { return _level; }
   void accept(basic_ast_visitor *sp, int level) {
     sp->do_stop_node(this, level);
   }
