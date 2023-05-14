@@ -8,7 +8,6 @@ namespace mml {
 class function_definition_node : public cdk::expression_node {
   cdk::sequence_node *_arguments;
   mml::block_node *_block;
-  std::shared_ptr<cdk::basic_type> _outputType;
   bool _main;
 
 public:
@@ -28,7 +27,8 @@ public:
    * Constructor for the main function.
    */
   inline function_definition_node(int lineno, mml::block_node *block)
-      : cdk::expression_node(lineno), _block(block), _main(true) {
+      : cdk::expression_node(lineno), _block(block), _arguments(nullptr),
+        _main(true) {
     type(cdk::functional_type::create(
         cdk::primitive_type::create(4, cdk::TYPE_INT)));
   }
@@ -37,7 +37,7 @@ public:
   inline cdk::sequence_node *arguments() { return _arguments; }
 
   inline mml::block_node *block() { return _block; }
-  
+
   inline bool main() { return _main; }
 
   void accept(basic_ast_visitor *sp, int level) {
