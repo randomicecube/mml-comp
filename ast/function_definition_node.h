@@ -35,7 +35,9 @@ public:
 
 public:
   inline cdk::sequence_node *arguments() { return _arguments; }
+
   inline mml::block_node *block() { return _block; }
+  
   inline bool main() { return _main; }
 
   void accept(basic_ast_visitor *sp, int level) {
