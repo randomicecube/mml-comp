@@ -28,8 +28,7 @@ public:
    * Cosntructor for the main function.
    */
   inline function_definition_node(int lineno, mml::block_node *block)
-      : cdk::expression_node(lineno), _arguments(arguments), _block(block),
-        _main(true) {
+      : cdk::expression_node(lineno), _block(block), _main(true) {
     type(cdk::functional_type::create(
         cdk::primitive_type::create(4, cdk::TYPE_INT)));
   }
