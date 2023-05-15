@@ -10,7 +10,7 @@ namespace mml {
  * Class for describing function call nodes.
  */
 class function_call_node : public cdk::expression_node {
-  cdk::expression_node *_identifier;
+  cdk::expression_node *_function;
   cdk::sequence_node *_arguments;
 
 public:
@@ -19,20 +19,21 @@ public:
    * An empty sequence is automatically inserted to represent
    * the missing arguments.
    */
-  inline function_call_node(int lineno, cdk::expression_node *identifier)
-      : cdk::expression_node(lineno), _identifier(identifier),
+  inline function_call_node(int lineno, cdk::expression_node *function)
+      : cdk::expression_node(lineno), _function(function),
         _arguments(new cdk::sequence_node(lineno)) {}
 
   /**
    * Constructor for a function call with arguments.
    */
-  inline function_call_node(int lineno, cdk::expression_node *identifier,
+  inline function_call_node(int lineno, cdk::expression_node *function,
                             cdk::sequence_node *arguments)
-      : cdk::expression_node(lineno), _identifier(identifier),
+      : cdk::expression_node(lineno), _function(function),
         _arguments(arguments) {}
 
 public:
-  inline cdk::expression_node *identifier() { return _identifier; }
+  inline cdk::expression_node *function() { return _function; }
+
   inline cdk::sequence_node *arguments() { return _arguments; }
 
   void accept(basic_ast_visitor *sp, int level) {
