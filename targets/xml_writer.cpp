@@ -218,8 +218,9 @@ void mml::xml_writer::do_return_node(mml::return_node *const node, int lvl) {
 //---------------------------------------------------------------------------
 
 void mml::xml_writer::do_nullptr_node(mml::nullptr_node *const node, int lvl) {
-  // FIXME: currently empty in order to compile, isn't required for the first
-  // delivery
+  ASSERT_SAFE_EXPRESSIONS;
+  openTag(node, lvl);
+  closeTag(node, lvl);
 }
 
 //---------------------------------------------------------------------------
