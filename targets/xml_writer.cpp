@@ -331,6 +331,16 @@ void mml::xml_writer::do_function_call_node(mml::function_call_node *const node,
 
 void mml::xml_writer::do_function_definition_node(
     mml::function_definition_node *const node, int lvl) {
-  // FIXME: currently empty in order to compile, isn't required for the first
-  // delivery
+  ASSERT_SAFE_EXPRESSIONS;
+  os() << std::string(lvl, ' ') << "<" << node->label() << " type='"
+       << cdk::to_string(node->type()) << "' main='" << node->main() << "'>"
+       << std::endl;
+  if (node->arguments()) {
+    openTag("arguments", lvl + 2);
+    node->arguments()->accept(this, lvl + 4);
+    closeTag("arguments", lvl + 2);
+  }
+  openTag("block", lvl + 2);
+  node->block()->accept(this, lvl + 4);
+  closeTag("block", lvl + 2);
 }
