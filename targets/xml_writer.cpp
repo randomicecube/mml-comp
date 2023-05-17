@@ -196,13 +196,15 @@ void mml::xml_writer::do_if_else_node(mml::if_else_node *const node, int lvl) {
 
 void mml::xml_writer::do_stop_node(mml::stop_node *const node, int lvl) {
   ASSERT_SAFE_EXPRESSIONS;
-  openTag(node, lvl);
+  os() << std::string(lvl, ' ') << "<" << node->label() << " level='"
+       << node->level() << "'>" << std::endl;
   closeTag(node, lvl);
 }
 
 void mml::xml_writer::do_next_node(mml::next_node *const node, int lvl) {
   ASSERT_SAFE_EXPRESSIONS;
-  openTag(node, lvl);
+  os() << std::string(lvl, ' ') << "<" << node->label() << " level='"
+       << node->level() << "'>" << std::endl;
   closeTag(node, lvl);
 }
 
