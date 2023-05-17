@@ -303,8 +303,10 @@ void mml::xml_writer::do_index_node(mml::index_node *const node, int lvl) {
 
 void mml::xml_writer::do_stack_alloc_node(mml::stack_alloc_node *const node,
                                           int lvl) {
-  // FIXME: currently empty in order to compile, isn't required for the first
-  // delivery
+  ASSERT_SAFE_EXPRESSIONS;
+  openTag(node, lvl);
+  node->argument()->accept(this, lvl + 2);
+  closeTag(node, lvl);
 }
 
 //---------------------------------------------------------------------------
