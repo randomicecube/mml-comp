@@ -288,8 +288,15 @@ void mml::xml_writer::do_sizeof_node(mml::sizeof_node *const node, int lvl) {
 //---------------------------------------------------------------------------
 
 void mml::xml_writer::do_index_node(mml::index_node *const node, int lvl) {
-  // FIXME: currently empty in order to compile, isn't required for the first
-  // delivery
+  ASSERT_SAFE_EXPRESSIONS;
+  openTag(node, lvl);
+  openTag("base", lvl + 2);
+  node->base()->accept(this, lvl + 4);
+  closeTag("base", lvl + 2);
+  openTag("index", lvl + 2);
+  node->index()->accept(this, lvl + 4);
+  closeTag("index", lvl + 2);
+  closeTag(node, lvl);
 }
 
 //---------------------------------------------------------------------------
