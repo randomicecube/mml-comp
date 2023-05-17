@@ -227,8 +227,17 @@ void mml::xml_writer::do_nullptr_node(mml::nullptr_node *const node, int lvl) {
 
 void mml::xml_writer::do_declaration_node(mml::declaration_node *const node,
                                           int lvl) {
-  // FIXME: currently empty in order to compile, isn't required for the first
-  // delivery
+  ASSERT_SAFE_EXPRESSIONS;
+  os() << std::string(lvl, ' ') << "<" << node->label() << " qualifier='"
+       << node->qualifier() << "' identifier='" << node->identifier()
+       << "' type='" << cdk::to_string(node->type()) << "'>" << std::endl;
+
+  if (node->init()) {
+    openTag("init", lvl + 2);
+    node->init()->accept(this, lvl + 4);
+    closeTag("init", lvl + 2);
+  }
+  closeTag(node, lvl);
 }
 
 //---------------------------------------------------------------------------
