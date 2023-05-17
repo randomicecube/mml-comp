@@ -143,11 +143,12 @@ void mml::xml_writer::do_evaluation_node(mml::evaluation_node *const node,
 }
 
 void mml::xml_writer::do_print_node(mml::print_node *const node, int lvl) {
-  // FIXME: only works in the next delivery
-  /*ASSERT_SAFE_EXPRESSIONS;
-  openTag(node, lvl);
-  node->argument()->accept(this, lvl + 2);
-  closeTag(node, lvl);*/
+  ASSERT_SAFE_EXPRESSIONS;
+  os() << std::string(lvl, ' ') << "<" << node->label() << " newline='"
+       << std::boolalpha << node->newline() << std::noboolalpha << "'>"
+       << std::endl;
+  node->arguments()->accept(this, lvl + 2);
+  closeTag(node, lvl);
 }
 
 //---------------------------------------------------------------------------
@@ -290,4 +291,3 @@ void mml::xml_writer::do_function_definition_node(
   // FIXME: currently empty in order to compile, isn't required for the first
   // delivery
 }
-
