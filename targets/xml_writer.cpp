@@ -357,3 +357,4 @@ void mml::xml_writer::do_function_definition_node(
   node->block()->accept(this, lvl + 4);
   closeTag("block", lvl + 2);
 }
+
