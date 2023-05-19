@@ -345,11 +345,9 @@ void mml::xml_writer::do_function_call_node(mml::function_call_node *const node,
                                             int lvl) {
   // ASSERT_SAFE_EXPRESSIONS;
   openTag(node, lvl);
-  if (node->function()) {
-    openTag("function", lvl + 2);
-    node->function()->accept(this, lvl + 4);
-    closeTag("function", lvl + 2);
-  }
+  openTag("function", lvl + 2);
+  node->function()->accept(this, lvl + 4);
+  closeTag("function", lvl + 2);
   if (node->arguments()) {
     openTag("arguments", lvl + 2);
     node->arguments()->accept(this, lvl + 4);
