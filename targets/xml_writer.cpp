@@ -212,7 +212,9 @@ void mml::xml_writer::do_return_node(mml::return_node *const node, int lvl) {
   // ASSERT_SAFE_EXPRESSIONS;
   openTag(node, lvl);
   openTag("retval", lvl + 2);
-  node->retval()->accept(this, lvl + 4);
+  if (node->retval()) {
+    node->retval()->accept(this, lvl + 4);
+  }
   closeTag("retval", lvl + 2);
   closeTag(node, lvl);
 }
