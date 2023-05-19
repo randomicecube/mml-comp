@@ -252,6 +252,8 @@ void mml::xml_writer::do_declaration_node(mml::declaration_node *const node,
   // ASSERT_SAFE_EXPRESSIONS;
   const std::string qualifier = getQualifier(node->qualifier());
 
+  // cdk::to_string(node->type()) won't properly work with the auto keyword until
+  // the type checker is properly implemented
   os() << std::string(lvl, ' ') << "<" << node->label() << " qualifier='"
        << qualifier << "' identifier='" << node->identifier() << "' type='"
        << cdk::to_string(node->type()) << "'>" << std::endl;
