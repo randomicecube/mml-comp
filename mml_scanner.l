@@ -11,24 +11,58 @@
 // don't change this
 #define yyerror LexerError
 %}
-%x X_STRING
+%x X_STRING X_COMMENT
 %%
   yydebug=1; set_debug(1);
 
-"--".*                 ; /* ignore comments */
+/******************************************************************************/
+ *  COMMENTS - can start both with // and /* and can be nested
+ ******************************************************************************/
+
+"//".*                 ;
+
+"/*"                   yy_push_state(X_COMMENT);
+<X_COMMENT>"*/"        yy_pop_state();
+<X_COMMENT>"/*"        yy_push_state(X_COMMENT); /* nested comment */
+<X_COMMENT>.|\n        ;
+
+/******************************************************************************/
+ *  KEYWORDS/OPERATORS
+ ******************************************************************************/
 
 ">="                   return tGE; 
 "<="                   return tLE; 
 "=="                   return tEQ; 
-"!="                   return tNE; 
+"!="                   return tNE;
+
+"&&"                   return tAND;
+"||"                   return tOR;
 
 "while"                return tWHILE; 
-"if"                   return tIF; 
-"else"                 return tELSE; 
-"print"                return tPRINT; 
 "input"                return tINPUT; 
+"!"                    return tWRITE;
+"!!"                   return tWRITELN;
+"sizeof"               return tSIZEOF;
+"return"               return tRETURN;
+
+"foreign"              return tFOREIGN;
+"forward"              return tFORWARD;
+"public"               return tPUBLIC;
+"auto"                 return tAUTO;
+
 "begin"                return tBEGIN; 
-"end"                  return tEND; 
+"end"                  return tEND;
+"next"                 return tNEXT;
+"stop"                 return tSTOP;
+
+"int"                  return tINTEGER_TYPE;
+"double"               return tDOUBLE_TYPE;
+"string"               return tSTRING_TYPE;
+"null"                 return tNULLPTR;
+
+"if"                   return tIF;
+"elif"                 return tELIF;
+"else"                 return tELSE; 
 
 [A-Za-z][A-Za-z0-9_]*  yylval.s = new std::string(yytext); return tIDENTIFIER;
 

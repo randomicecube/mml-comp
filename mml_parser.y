@@ -36,8 +36,7 @@
 %token <d> tDOUBLE
 %token <s> tIDENTIFIER tSTRING
 
-/* FIXME: remove tPRINT */
-%token tWHILE tPRINT tINPUT tWRITE tWRITELN tSIZEOF tRETURN
+%token tWHILE tINPUT tWRITE tWRITELN tSIZEOF tRETURN
 %token tFOREIGN tFORWARD tPUBLIC tAUTO
 %token tBEGIN tEND tNEXT tSTOP
 %token tINT_TYPE tDOUBLE_TYPE tSTRING_TYPE tVOID_TYPE tNULLPTR
@@ -77,7 +76,7 @@ list : stmt	     { $$ = new cdk::sequence_node(LINE, $1); }
 	   ;
 
 stmt : expr ';'                         { $$ = new mml::evaluation_node(LINE, $1); }
- 	   | tPRINT expr ';'                  { /* $$ = new mml::print_node(LINE, $2); */ }
+ 	 /*  | tPRINT expr ';'                  { $$ = new mml::print_node(LINE, $2); } */
      | tINPUT                           { $$ = new mml::input_node(LINE); }
      | tWHILE '(' expr ')' stmt         { $$ = new mml::while_node(LINE, $3, $5); }
      | tIF '(' expr ')' stmt %prec tIFX { $$ = new mml::if_node(LINE, $3, $5); }
