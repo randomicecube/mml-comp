@@ -84,7 +84,7 @@
 }
 <X_BACKSLASH>.             *yylval.s += yytext; yy_pop_state();
 
-<X_STRING_SKIP>"\""          {
+<X_STRING_SKIP>"\""        {
   yy_pop_state(); yy_pop_state(); yy_pop_state(); /* X_STRING_SKIP, X_BACKSLASH, X_STRING */
   return tSTRING;
 }
