@@ -10,6 +10,27 @@
 
 // don't change this
 #define yyerror LexerError
+
+int mml_stoi(const std::string &s, int base = 10) {
+  try {
+    return std::stoi(s, nullptr, base);
+  } catch (const std::invalid_argument &e) {
+    yyerror("invalid integer");
+  } catch (const std::out_of_range &e) {
+    yyerror("out of range integer");
+  }
+}
+
+double mml_stod(const std::string &s) {
+  try {
+    return std::stod(s);
+  } catch (const std::invalid_argument &e) {
+    yyerror("invalid double");
+  } catch (const std::out_of_range &e) {
+    yyerror("out of range double");
+  }
+}
+
 %}
 %x X_STRING X_COMMENT
 %%
@@ -22,8 +43,8 @@
 "//".*                 ;
 
 "/*"                   yy_push_state(X_COMMENT);
-<X_COMMENT>"*/"        yy_pop_state();
 <X_COMMENT>"/*"        yy_push_state(X_COMMENT); /* nested comment */
+<X_COMMENT>"*/"        yy_pop_state();
 <X_COMMENT>.|\n        ;
 
 /******************************************************************************/
@@ -72,7 +93,16 @@
 <X_STRING>.            *yylval.s += yytext;
 <X_STRING>\n           yyerror("newline in string");
 
-[0-9]+                 yylval.i = strtol(yytext, nullptr, 10); return tINTEGER;
+/******************************************************************************/
+ *  NUMBERS
+ ******************************************************************************/
+
+/* Expression "stolen" from OG */
+([0-9]*\.[0-9]+|[0-9]+\.[0-9]*)([eE][-+]?[0-9]+)?     yylval.d = mml_stod(yytext); return tDOUBLE;
+
+0[0-7]+                yylval.i = mml_stoi(yytext, 8) return tINTEGER; /* octal */
+0[0-9]+                yyerror("invalid base for number"); /* leading zero is not allowed unless in octal form */
+0|[1-9][0-9]*          yylval.i = mml_stoi(yytext); return tINTEGER; /* decimal */
 
 [-()<>=+*/%;{}.]       return *yytext;
 
