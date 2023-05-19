@@ -12,7 +12,7 @@
 #define yyerror LexerError
 
 %}
-%x X_STRING X_COMMENT
+%x X_STRING X_COMMENT X_BACKSLASH X_STRING_SKIP
 %%
   yydebug=1; set_debug(1);
 
@@ -59,11 +59,36 @@
 
 [A-Za-z][A-Za-z0-9_]*  yylval.s = new std::string(yytext); return tIDENTIFIER;
 
-\"                     yy_push_state(X_STRING); yylval.s = new std::string("");
-<X_STRING>\"           yy_pop_state(); return tSTRING;
+"\""                     yy_push_state(X_STRING); yylval.s = new std::string("");
+<X_STRING>\\           yy_push_state(X_BACKSLASH);
+
+<X_STRING>"\""           yy_pop_state(); return tSTRING;
 <X_STRING>\\\"         *yylval.s += yytext + 1;
-<X_STRING>.            *yylval.s += yytext;
+<X_STRING>\0           yyerror("null byte in string");
 <X_STRING>\n           yyerror("newline in string");
+<X_STRING>.            *yylval.s += yytext;
+
+<X_BACKSLASH>n             *yylval.s += '\n'; yy_pop_state();
+<X_BACKSLASH>r             *yylval.s += '\r'; yy_pop_state();
+<X_BACKSLASH>t             *yylval.s += '\t'; yy_pop_state();
+<X_BACKSLASH>\"            *yylval.s += '\"'; yy_pop_state();
+<X_BACKSLASH>\\            *yylval.s += '\\'; yy_pop_state();
+<X_BACKSLASH>0             yy_push_state(X_STRING_SKIP);
+<X_BACKSLASH>[0-7]{1,3}   {
+  const int c = std::stoi(yytext, NULL, 8);
+  if (c > 255) {
+    yyerror("octal escape sequence out of range");
+  }
+  *yylval.s += (char)c;
+  yy_pop_state(); /* TODO: check whether it is also needed to cast to unsigned char, like in OG */
+}
+<X_BACKSLASH>.             *yylval.s += yytext; yy_pop_state();
+
+<X_STRING_SKIP>"\""          {
+  yy_pop_state(); yy_pop_state(); yy_pop_state(); /* X_STRING_SKIP, X_BACKSLASH, X_STRING */
+  return tSTRING;
+}
+<X_STRING_SKIP>.           ;
 
 ([0-9]*\.[0-9]+|[0-9]+\.[0-9]*)([eE][-+]?[0-9]+)? { /* double */
   try {
