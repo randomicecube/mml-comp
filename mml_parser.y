@@ -52,6 +52,18 @@
 %type <expression> expr
 %type <lvalue> lval
 
+/* Associativity rules */
+
+%right '='
+%left tOR
+%left tAND
+%nonassoc tNOT
+%left tGE tLE tEQ tNE '>' '<'
+%left '+' '-'
+%left '*' '/' '%'
+%nonassoc tUNARY
+%nonassoc '(' '['
+
 %{
 //-- The rules below will be included in yyparse, the main parsing function.
 %}
