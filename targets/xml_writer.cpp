@@ -1,7 +1,24 @@
 #include "targets/xml_writer.h"
 #include ".auto/all_nodes.h" // automatically generated
 #include "targets/type_checker.h"
+#include <map>
 #include <string>
+
+#include "mml_parser.tab.h"
+
+//---------------------------------------------------------------------------
+
+const std::map<int, std::string> _qualifiers = {{tPUBLIC, "public"},
+                                                {tFOREIGN, "foreign"},
+                                                {tFORWARD, "forward"},
+                                                {tAUTO, "auto"}};
+
+std::string getQualifier(int qualifier) {
+  auto it = _qualifiers.find(qualifier);
+  if (it != _qualifiers.end())
+    return it->second;
+  return "unknown"; // should never happen
+}
 
 //---------------------------------------------------------------------------
 
@@ -233,9 +250,11 @@ void mml::xml_writer::do_nullptr_node(mml::nullptr_node *const node, int lvl) {
 void mml::xml_writer::do_declaration_node(mml::declaration_node *const node,
                                           int lvl) {
   // ASSERT_SAFE_EXPRESSIONS;
+  const std::string qualifier = getQualifier(node->qualifier());
+
   os() << std::string(lvl, ' ') << "<" << node->label() << " qualifier='"
-       << node->qualifier() << "' identifier='" << node->identifier()
-       << "' type='" << cdk::to_string(node->type()) << "'>" << std::endl;
+       << qualifier << "' identifier='" << node->identifier() << "' type='"
+       << cdk::to_string(node->type()) << "'>" << std::endl;
 
   if (node->init()) {
     openTag("init", lvl + 2);

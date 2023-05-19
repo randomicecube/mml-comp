@@ -35,6 +35,7 @@
 %token <i> tINTEGER
 %token <s> tIDENTIFIER tSTRING
 %token tWHILE tIF tPRINT tINPUT tBEGIN tEND
+%token tFOREIGN tFORWARD tPUBLIC tAUTO
 
 %nonassoc tIFX
 %nonassoc tELSE
