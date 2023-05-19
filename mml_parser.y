@@ -53,11 +53,11 @@
 %nonassoc tELIF
 %nonassoc tELSE
 
-%type <sequence> decls instrs list /* FIXME: remove list for something more meaningful */
+%type <sequence> file global_decls decls instrs
 %type <expression> expr main
 %type <lvalue> lval
 %type <block> blk
-%type <declaration> decl
+%type <declaration> global_decl decl
 %type <t> type auto
 
 /* Associativity rules */
@@ -88,7 +88,19 @@
 %}
 %%
 
-main : tBEGIN blk tEND { compiler->ast(new mml::function_definition_node(LINE, $2)); }
+/* TODO: is parsing an empty file needed? */
+file : global_decls     { compiler->ast($$ = $1); }
+    | main              { compiler->ast($$ = new cdk::sequence_node(LINE, $1)); }
+    | global_decls main { compiler->ast(new cdk::sequence_node(LINE, $2, $1)); }
+    ;
+
+global_decls : global_decl               { $$ = new cdk::sequence_node(LINE, $1); }
+    | global_decls global_decl           { $$ = new cdk::sequence_node(LINE, $2, $1); }
+    ;
+
+// TODO: global_decl
+
+main : tBEGIN blk tEND { $$ = new mml::function_definition_node(LINE, $2); }
     ;
 
 blk : '{' decls instrs '}'                { $$ = new mml::block_node(LINE, $2, $3); }
@@ -98,8 +110,8 @@ blk : '{' decls instrs '}'                { $$ = new mml::block_node(LINE, $2, $
     ;
 
 
-decls : decl	     { $$ = new cdk::sequence_node(LINE, $1); }
-    | decls decl   { $$ = new cdk::sequence_node(LINE, $2, $1); }
+decls : decl	          { $$ = new cdk::sequence_node(LINE, $1); }
+    | decls decl          { $$ = new cdk::sequence_node(LINE, $2, $1); }
     ;
 
 instrs : instr            { $$ = new cdk::sequence_node(LINE, $1); }
@@ -118,27 +130,33 @@ instrs : instr            { $$ = new cdk::sequence_node(LINE, $1); }
     ; */
 
 expr : tINTEGER                    { $$ = new cdk::integer_node(LINE, $1); }
+    | tDOUBLE                      { $$ = new cdk::double_node(LINE, $1); }
     | tSTRING                      { $$ = new cdk::string_node(LINE, $1); }
+    | tNULLPTR                     { $$ = new mml::nullptr_node(LINE); }
+    | '(' expr ')'                 { $$ = $2; }
+    | '[' expr ']'                 { $$ = new mml::stack_alloc_node(LINE, $2); }
     | '+' expr %prec tUNARY        { $$ = new mml::identity_node(LINE, $2); }
     | '-' expr %prec tUNARY        { $$ = new cdk::neg_node(LINE, $2); }
-    | '~' expr %prec tUNARY        { $$ = new cdk::not_node(LINE, $2); }
-    | expr '+' expr	               { $$ = new cdk::add_node(LINE, $1, $3); }
-    | expr '-' expr	               { $$ = new cdk::sub_node(LINE, $1, $3); }
+    | lval '?'                     { $$ = new mml::address_of_node(LINE, $1); }
+    | lval                         { $$ = new cdk::rvalue_node(LINE, $1); }  // FIXME: is this needed/in the right place?
     | expr '*' expr	               { $$ = new cdk::mul_node(LINE, $1, $3); }
     | expr '/' expr	               { $$ = new cdk::div_node(LINE, $1, $3); }
     | expr '%' expr	               { $$ = new cdk::mod_node(LINE, $1, $3); }
+    | expr '+' expr	               { $$ = new cdk::add_node(LINE, $1, $3); }
+    | expr '-' expr	               { $$ = new cdk::sub_node(LINE, $1, $3); }
     | expr '<' expr	               { $$ = new cdk::lt_node(LINE, $1, $3); }
     | expr '>' expr	               { $$ = new cdk::gt_node(LINE, $1, $3); }
     | expr tGE expr	               { $$ = new cdk::ge_node(LINE, $1, $3); }
     | expr tLE expr                { $$ = new cdk::le_node(LINE, $1, $3); }
-    | expr tNE expr	               { $$ = new cdk::ne_node(LINE, $1, $3); }
     | expr tEQ expr	               { $$ = new cdk::eq_node(LINE, $1, $3); }
-    | '(' expr ')'                 { $$ = $2; }
-    | lval                         { $$ = new cdk::rvalue_node(LINE, $1); }  //FIXME
+    | expr tNE expr	               { $$ = new cdk::ne_node(LINE, $1, $3); }
+    | tNOT expr %prec tUNARY       { $$ = new cdk::not_node(LINE, $2); }
+    | expr tAND expr               { $$ = new cdk::and_node(LINE, $1, $3); }
+    | expr tOR expr                { $$ = new cdk::or_node(LINE, $1, $3); }
     | lval '=' expr                { $$ = new cdk::assignment_node(LINE, $1, $3); }
     ;
 
 lval : tIDENTIFIER             { $$ = new cdk::variable_node(LINE, $1); }
-     ;
+    ;
 
 %%
