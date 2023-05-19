@@ -33,18 +33,19 @@
 };
 
 %token <i> tINTEGER
+%token <d> tDOUBLE
 %token <s> tIDENTIFIER tSTRING
-%token tWHILE tIF tPRINT tINPUT tBEGIN tEND
+
+/* FIXME: remove tPRINT */
+%token tWHILE tPRINT tINPUT tWRITE tWRITELN tSIZEOF tRETURN
 %token tFOREIGN tFORWARD tPUBLIC tAUTO
+%token tBEGIN tEND tNEXT tSTOP
+%token tINT_TYPE tDOUBLE_TYPE tSTRING_TYPE tVOID_TYPE tNULLPTR
 
 %nonassoc tIFX
+%nonassoc tIF
+%nonassoc tELIF
 %nonassoc tELSE
-
-%right '='
-%left tGE tLE tEQ tNE '>' '<'
-%left '+' '-'
-%left '*' '/' '%'
-%nonassoc tUNARY
 
 %type <node> stmt /* program */
 %type <sequence> list
