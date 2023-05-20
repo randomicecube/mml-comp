@@ -135,15 +135,18 @@ fun_type : data_type '<' data_types '>'           { $$ = cdk_function_type::crea
          | data_type '<'            '>'           { $$ = cdk_function_type::create($1); }
          | void_type '<' data_types '>'           { $$ = cdk_function_type::create(*$3, $1); delete $3; }
          | void_type '<'            '>'           { $$ = cdk_function_type::create($1); }
+         ;
 
 void_type : '[' tVOID_TYPE ']'                    { $$ = cdk::reference_type::create(4, cdk::primitive_type::create(0, cdk::TYPE_VOID)); }
           | '[' void_type ']'                     { $$ = $2; }
+          ;
 
 opt_init : /* empty */                            { $$ = nullptr; }
          | init                                   { $$ = $1; }
          ;
 
 init : '=' expr                                   { $$ = $2; }
+         ;
 
 declarations : declaration ';'	                  { $$ = new cdk::sequence_node(LINE, $1); }
              | declarations declaration ';'       { $$ = new cdk::sequence_node(LINE, $2, $1); }
