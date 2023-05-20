@@ -54,7 +54,7 @@
 %nonassoc tELSE
 
 %type <sequence> file global_decls decls instrs
-%type <expression> expr main integer double opt_initializer initializer
+%type <expression> expr main integer double opt_init init
 %type <lvalue> lval
 %type <block> blk
 %type <declaration> global_decl decl
@@ -104,8 +104,8 @@ global_decls : global_decl               { $$ = new cdk::sequence_node(LINE, $1)
 
 global_decl : tFOREIGN data_type tIDENTIFIER ';'      { $$ = new mml::declaration_node(LINE, tFOREIGN, $2, *$3, nullptr); delete $3; }
     | tFORWARD data_type tIDENTIFIER ';'              { $$ = new mml::declaration_node(LINE, tFORWARD, $2, *$3, nullptr); delete $3; }
-    | tPUBLIC data_type tIDENTIFIER opt_initializer   { $$ = new mml::declaration_node(LINE, tPUBLIC, $2, *$3, $4); delete $3; } // FIXME: dont forget auto
-    | tPUBLIC tIDENTIFIER initializer                 { $$ = new mml::declaration_node(LINE, tPUBLIC, nullptr, *$2, $3); delete $2; }
+    | tPUBLIC data_type tIDENTIFIER opt_init          { $$ = new mml::declaration_node(LINE, tPUBLIC, $2, *$3, $4); delete $3; } // FIXME: dont forget auto
+    | tPUBLIC tIDENTIFIER init                        { $$ = new mml::declaration_node(LINE, tPUBLIC, nullptr, *$2, $3); delete $2; }
     | decl                                            { $$ = $1; }
     ;
 
@@ -121,11 +121,11 @@ data_type : tSTRING_TYPE                  { $$ = cdk::primitive_type::create(4, 
     // TODO: missing pointers (reference types)
     ;
 
-opt_initializer : ';'                     { $$ = nullptr; }
-    | initializer                         { $$ = $1; }
+opt_init : ';'                     { $$ = nullptr; }
+    | init                         { $$ = $1; }
     ;
 
-initializer : '=' expr ';'                { $$ = $2; } // TODO: should we allow exprs here too?
+init : '=' expr ';'                { $$ = $2; } // TODO: should we allow exprs here too?
     ;
 
 decls : decl	            { $$ = new cdk::sequence_node(LINE, $1); }
@@ -136,8 +136,8 @@ instrs : instr            { $$ = new cdk::sequence_node(LINE, $1); }
     | instrs instr        { $$ = new cdk::sequence_node(LINE, $2, $1); }
     ;
 
-decl : data_type tIDENTIFIER opt_initializer    { $$ = new mml::declaration_node(LINE, tPRIVATE, $1, *$2, $3); delete $2; }
-    | tAUTO tIDENTIFIER initializer             { $$ = new mml::declaration_node(LINE, tPRIVATE, nullptr, *$2, $3); delete $2; }
+decl : data_type tIDENTIFIER opt_init    { $$ = new mml::declaration_node(LINE, tPRIVATE, $1, *$2, $3); delete $2; }
+    | tAUTO tIDENTIFIER init             { $$ = new mml::declaration_node(LINE, tPRIVATE, nullptr, *$2, $3); delete $2; }
     ;
 
 instr : // TODO, check grammar table on reference manual
