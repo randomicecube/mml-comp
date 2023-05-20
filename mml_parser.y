@@ -44,7 +44,7 @@
 
 /* FIXME: remove tPRINT */
 %token tWHILE tPRINT tINPUT tWRITE tWRITELN tSIZEOF tRETURN
-%token tFOREIGN tFORWARD tPUBLIC tAUTO
+%token tFOREIGN tFORWARD tPUBLIC tPRIVATE tAUTO
 %token tBEGIN tEND tARROW tNEXT tSTOP
 %token tINT_TYPE tDOUBLE_TYPE tSTRING_TYPE tVOID_TYPE tNULLPTR
 
@@ -54,11 +54,12 @@
 %nonassoc tELSE
 
 %type <sequence> file global_decls decls instrs
-%type <expression> expr main
+%type <expression> expr main integer double opt_initializer initializer
 %type <lvalue> lval
 %type <block> blk
 %type <declaration> global_decl decl
 %type <t> type auto
+%type <s> string
 
 /* Associativity rules */
 
@@ -88,19 +89,24 @@
 %}
 %%
 
-/* TODO: is parsing an empty file needed? */
-file : global_decls     { compiler->ast($$ = $1); }
+file : /* empty */      { compiler->ast($$ = new cdk::sequence_node(LINE)); }
+    | global_decls      { compiler->ast($$ = $1); }
     | main              { compiler->ast($$ = new cdk::sequence_node(LINE, $1)); }
     | global_decls main { compiler->ast(new cdk::sequence_node(LINE, $2, $1)); }
+    ;
+
+main : tBEGIN blk tEND { $$ = new mml::function_definition_node(LINE, $2); }
     ;
 
 global_decls : global_decl               { $$ = new cdk::sequence_node(LINE, $1); }
     | global_decls global_decl           { $$ = new cdk::sequence_node(LINE, $2, $1); }
     ;
 
-// TODO: global_decl
-
-main : tBEGIN blk tEND { $$ = new mml::function_definition_node(LINE, $2); }
+global_decl : tFOREIGN data_type tIDENTIFIER ';'      { $$ = new mml::declaration_node(LINE, tFOREIGN, $2, *$3, nullptr); delete $3; }
+    | tFORWARD data_type tIDENTIFIER ';'              { $$ = new mml::declaration_node(LINE, tFORWARD, $2, *$3, nullptr); delete $3; }
+    | tPUBLIC data_type tIDENTIFIER opt_initializer   { $$ = new mml::declaration_node(LINE, tPUBLIC, $2, *$3, $4); delete $3; } // FIXME: dont forget auto
+    | tPUBLIC tIDENTIFIER initializer                 { $$ = new mml::declaration_node(LINE, tPUBLIC, nullptr, *$2, $3); delete $2; }
+    | decl                                            { $$ = $1; }
     ;
 
 blk : '{' decls instrs '}'                { $$ = new mml::block_node(LINE, $2, $3); }
@@ -109,8 +115,20 @@ blk : '{' decls instrs '}'                { $$ = new mml::block_node(LINE, $2, $
     | '{' '}'                             { $$ = new mml::block_node(LINE, nullptr, nullptr); }
     ;
 
+data_type : tSTRING_TYPE                  { $$ = cdk::primitive_type::create(4, cdk::TYPE_STRING); }
+    | tINT_TYPE                           { $$ = cdk::primitive_type::create(4, cdk::TYPE_INT); }
+    | tDOUBLE_TYPE                        { $$ = cdk::primitive_type::create(8, cdk::TYPE_DOUBLE); }
+    // TODO: missing pointers (reference types)
+    ;
 
-decls : decl	          { $$ = new cdk::sequence_node(LINE, $1); }
+opt_initializer : ';'                     { $$ = nullptr; }
+    | initializer                         { $$ = $1; }
+    ;
+
+initializer : '=' expr ';'                { $$ = $2; } // TODO: should we allow exprs here too?
+    ;
+
+decls : decl	            { $$ = new cdk::sequence_node(LINE, $1); }
     | decls decl          { $$ = new cdk::sequence_node(LINE, $2, $1); }
     ;
 
@@ -118,7 +136,11 @@ instrs : instr            { $$ = new cdk::sequence_node(LINE, $1); }
     | instrs instr        { $$ = new cdk::sequence_node(LINE, $2, $1); }
     ;
 
-/* TODO: decl, instr */
+decl : data_type tIDENTIFIER opt_initializer    { $$ = new mml::declaration_node(LINE, tPRIVATE, $1, *$2, $3); delete $2; }
+    | tAUTO tIDENTIFIER initializer             { $$ = new mml::declaration_node(LINE, tPRIVATE, nullptr, *$2, $3); delete $2; }
+    ;
+
+instr : // TODO, check grammar table on reference manual
 
 /* stmt : expr ';'                         { $$ = new mml::evaluation_node(LINE, $1); }
     | tPRINT expr ';'                   { $$ = new mml::print_node(LINE, $2); }
@@ -129,9 +151,9 @@ instrs : instr            { $$ = new cdk::sequence_node(LINE, $1); }
     | '{' list '}'                      { $$ = $2; }
     ; */
 
-expr : tINTEGER                    { $$ = new cdk::integer_node(LINE, $1); }
-    | tDOUBLE                      { $$ = new cdk::double_node(LINE, $1); }
-    | tSTRING                      { $$ = new cdk::string_node(LINE, $1); }
+expr : integer                     { $$ = $1; }
+    | double                       { $$ = $1; }
+    | string                       { $$ = new cdk::string_node(LINE, $1); }
     | tNULLPTR                     { $$ = new mml::nullptr_node(LINE); }
     | '(' expr ')'                 { $$ = $2; }
     | '[' expr ']'                 { $$ = new mml::stack_alloc_node(LINE, $2); }
@@ -154,6 +176,16 @@ expr : tINTEGER                    { $$ = new cdk::integer_node(LINE, $1); }
     | expr tAND expr               { $$ = new cdk::and_node(LINE, $1, $3); }
     | expr tOR expr                { $$ = new cdk::or_node(LINE, $1, $3); }
     | lval '=' expr                { $$ = new cdk::assignment_node(LINE, $1, $3); }
+    ;
+
+integer : tINTEGER                 { $$ = new cdk::integer_node(LINE, $1); }
+    ;
+
+double : tDOUBLE                   { $$ = new cdk::double_node(LINE, $1); }
+    ;
+
+string : tSTRING                  { $$ = $1; }
+    | string tSTRING              { $$ = $1; $$->append(*$2); delete $2; }
     ;
 
 lval : tIDENTIFIER             { $$ = new cdk::variable_node(LINE, $1); }
