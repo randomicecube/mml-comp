@@ -146,7 +146,7 @@ opt_init : /* empty */                            { $$ = nullptr; }
          ;
 
 init : '=' expr                                   { $$ = $2; }
-         ;
+     ;
 
 declarations : declaration ';'	                  { $$ = new cdk::sequence_node(LINE, $1); }
              | declarations declaration ';'       { $$ = new cdk::sequence_node(LINE, $2, $1); }
@@ -214,7 +214,7 @@ double : tDOUBLE                     { $$ = new cdk::double_node(LINE, $1); }
        ;
 
 string : tSTRING                     { $$ = $1; }
-       | string tSTRING                 { $$ = $1; $$->append(*$2); delete $2; }
+       | string tSTRING              { $$ = $1; $$->append(*$2); delete $2; }
        ;
 
 lval : tIDENTIFIER                   { $$ = new cdk::variable_node(LINE, $1); }
