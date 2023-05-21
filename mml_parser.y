@@ -28,6 +28,7 @@
   double                d;	/* double value */
   std::string          *s;	/* symbol name or string literal */
   std::shared_ptr<cdk::basic_type> t; /* type */
+	std::vector<std::shared_ptr<cdk::basic_type>> *types;
 
   cdk::basic_node      *node;	/* node pointer */
   cdk::sequence_node   *sequence;
@@ -51,15 +52,16 @@
 %nonassoc tIF tELIF
 %nonassoc tELSE tWHILE
 
-%type <sequence> file global_declarations declarations instructions opt_expressions expressions opt_args args data_types
+%type <sequence> file global_declarations declarations instructions opt_expressions expressions opt_args args
 %type <expression> expression integer double opt_init init literal
 %type <lvalue> lval
 %type <block> inner_block block
-%type <declaration> global_declaration declaration arg
+%type <declaration> global_declaration declaration
 %type <function_definition> main fun_def
-%type <node> instruction else
+%type <node> instruction else arg
 %type <s> string
 %type <t> fun_type data_type void_type opt_auto
+%type <types> data_types
 // FIXME: Not sure if opt_auto is a t or an expression
 
 /* Associativity rules */
@@ -131,14 +133,14 @@ data_type : tSTRING_TYPE                          { $$ = cdk::primitive_type::cr
           | void_type                             { $$ = $1; }
           ;
 
-data_types : data_type                            { $$ = new std::vector<t>(); $$->push_back($1); }
+data_types : data_type                            { $$ = new std::vector<std::shared_ptr<cdk::basic_type>>(); $$->push_back($1); }
            | data_types ',' data_type             { $$ = $1; $$->push_back($3); }
            ;
 
-fun_type : data_type '<' data_types '>'           { $$ = cdk_function_type::create(*$3, $1); delete $3; }
-         | data_type '<'            '>'           { $$ = cdk_function_type::create($1); }
-         | void_type '<' data_types '>'           { $$ = cdk_function_type::create(*$3, $1); delete $3; }
-         | void_type '<'            '>'           { $$ = cdk_function_type::create($1); }
+fun_type : data_type '<' data_types '>'           { $$ = cdk::functional_type::create(*$3, $1); delete $3; }
+         | data_type '<'            '>'           { $$ = cdk::functional_type::create($1); }
+         | void_type '<' data_types '>'           { $$ = cdk::functional_type::create(*$3, $1); delete $3; }
+         | void_type '<'            '>'           { $$ = cdk::functional_type::create($1); }
          ;
 
 void_type : '[' tVOID_TYPE ']'                    { $$ = cdk::reference_type::create(4, cdk::primitive_type::create(0, cdk::TYPE_VOID)); }
@@ -175,8 +177,8 @@ instruction : block                                     { $$ = $1; }
             | tRETURN ';'                               { $$ = new mml::return_node(LINE, nullptr); }
             | tRETURN expression ';'                    { $$ = new mml::return_node(LINE, $2);      }
             | expression ';'                            { $$ = new mml::evaluation_node(LINE, $1); }
-            | expressions tWRITE                        { $$ = new mml::write_node(LINE, $1, false); }
-            | expressions tWRITELN                      { $$ = new mml::write_node(LINE, $1, true);  }
+            | expressions tWRITE                        { $$ = new mml::print_node(LINE, $1, false); }
+            | expressions tWRITELN                      { $$ = new mml::print_node(LINE, $1, true);  }
             ;
 
 else : tELSE instruction                                { $$ = $2; }
@@ -233,12 +235,12 @@ args : arg                                   { $$ = new cdk::sequence_node(LINE,
      | args ',' arg                          { $$ = new cdk::sequence_node(LINE, $3, $1); }
      ;
 
-arg : data_type tIDENTIFIER                  { $$ = new mml::declaration_node(LINE, nullptr, $1, $2, nullptr); }
+arg : data_type tIDENTIFIER                  { $$ = new mml::declaration_node(LINE, tPRIVATE, $1, *$2, NULL); delete $2; }
     ;
 
 literal: integer                             { $$ = $1; }
        | double                              { $$ = $1; }
-       | string                              { $$ = $$ = new cdk::string_node(LINE, $1); }
+       | string                              { $$ = new cdk::string_node(LINE, $1); }
        | tNULLPTR                            { $$ = new mml::nullptr_node(LINE); }
        ;
 
