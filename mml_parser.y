@@ -145,11 +145,10 @@ opt_init : /* empty */                            { $$ = nullptr; }
          | init                                   { $$ = $1; }
          ;
 
-/* FIXME: it shouldn't only be literals, I think, as we should also accept functions and pointers? */
-init : '=' literal                                { $$ = $2; }
+init : '=' expression                             { $$ = $2; }
      ;
 
-declarations : declaration ';'	                  { $$ = new cdk::sequence_node(LINE, $1); }
+declarations : declaration ';'	               { $$ = new cdk::sequence_node(LINE, $1); }
              | declarations declaration ';'       { $$ = new cdk::sequence_node(LINE, $2, $1); }
              ;
 
