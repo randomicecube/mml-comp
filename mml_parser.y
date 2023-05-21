@@ -219,6 +219,7 @@ expression : literal                             { $$ = $1; }
            | fun_def                             { $$ = $1; }
            ;
 
+/* TODO: check whether we can actually have data_type here, as the arguments shouldn't be, for example, void -- would this be checked in the type checker? */
 fun_def : '(' opt_args ')' tARROW data_type block { $$ = new mml::function_definition_node(LINE, $5, $2, $6); }
         ;
 
