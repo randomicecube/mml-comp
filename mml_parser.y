@@ -50,8 +50,8 @@
 %nonassoc tIF tELIF
 %nonassoc tELSE tWHILE
 
-%type <sequence> file global_declarations declarations instructions
-%type <expression> expr main integer double opt_init init
+%type <sequence> file global_declarations declarations instructions expressions
+%type <expression> expression main integer double opt_init init literal
 %type <lvalue> lval
 %type <block> block
 %type <declaration> global_declaration declaration
@@ -145,7 +145,8 @@ opt_init : /* empty */                            { $$ = nullptr; }
          | init                                   { $$ = $1; }
          ;
 
-init : '=' expr                                   { $$ = $2; }
+/* FIXME: it shouldn't only be literals, I think, as we should also accept functions and pointers? */
+init : '=' literal                                { $$ = $2; }
      ;
 
 declarations : declaration ';'	                  { $$ = new cdk::sequence_node(LINE, $1); }
@@ -160,52 +161,59 @@ instructions : instruction                        { $$ = new cdk::sequence_node(
              | instructions instruction           { $$ = new cdk::sequence_node(LINE, $2, $1); }
              ;
 
-instruction : block                               { $$ = $1; }
-            | tIF '(' expr ')' instruction        { $$ = new mml::if_node(LINE, $3, $5); }
-            | tIF '(' expr ')' instruction else   { $$ = new mml::if_else_node(LINE, $3, $5, $6); }
-            | tWHILE '(' expr ')' instruction     { $$ = new mml::while_node(LINE, $3, $5); }
-            | tSTOP ';'                           { $$ = new mml::stop_node(LINE);  }
-            | tSTOP tINTEGER ';'                  { $$ = new mml::stop_node(LINE, $2);  }
-            | tNEXT ';'                           { $$ = new mml::next_node(LINE); }
-            | tNEXT tINTEGER ';'                  { $$ = new mml::next_node(LINE, $2); }
-            | tRETURN ';'                         { $$ = new mml::return_node(LINE, nullptr); }
-            | tRETURN expr ';'                    { $$ = new mml::return_node(LINE, $2);      }
-            | expr ';'                            { $$ = new mml::evaluation_node(LINE, $1); }
-            | expressions tWRITE                  { $$ = new mml::write_node(LINE, $1, false); }
-            | expressions tWRITELN                { $$ = new mml::write_node(LINE, $1, true);  }
+instruction : block                                     { $$ = $1; }
+            | tIF '(' expression ')' instruction        { $$ = new mml::if_node(LINE, $3, $5); }
+            | tIF '(' expression ')' instruction else   { $$ = new mml::if_else_node(LINE, $3, $5, $6); }
+            | tWHILE '(' expression ')' instruction     { $$ = new mml::while_node(LINE, $3, $5); }
+            | tSTOP ';'                                 { $$ = new mml::stop_node(LINE);  }
+            | tSTOP tINTEGER ';'                        { $$ = new mml::stop_node(LINE, $2);  }
+            | tNEXT ';'                                 { $$ = new mml::next_node(LINE); }
+            | tNEXT tINTEGER ';'                        { $$ = new mml::next_node(LINE, $2); }
+            | tRETURN ';'                               { $$ = new mml::return_node(LINE, nullptr); }
+            | tRETURN expression ';'                    { $$ = new mml::return_node(LINE, $2);      }
+            | expression ';'                            { $$ = new mml::evaluation_node(LINE, $1); }
+            | expressions tWRITE                        { $$ = new mml::write_node(LINE, $1, false); }
+            | expressions tWRITELN                      { $$ = new mml::write_node(LINE, $1, true);  }
             ;
 
-else : tELSE instruction                          { $$ = $2; }
-     | tELIF '(' expr ')' instruction             { $$ = new mml::if_node(LINE, $3, $5); }
-     | tELIF '(' expr ')' instruction else        { $$ = new mml::if_else_node(LINE, $3, $5, $6); }
+else : tELSE instruction                                { $$ = $2; }
+     | tELIF '(' expression ')' instruction             { $$ = new mml::if_node(LINE, $3, $5); }
+     | tELIF '(' expression ')' instruction else        { $$ = new mml::if_else_node(LINE, $3, $5, $6); }
      ;
 
-expr : integer                       { $$ = $1; }
-     | double                        { $$ = $1; }
-     | string                        { $$ = new cdk::string_node(LINE, $1); }
-     | tNULLPTR                      { $$ = new mml::nullptr_node(LINE); }
-     | '(' expr ')'                  { $$ = $2; }
-     | '[' expr ']'                  { $$ = new mml::stack_alloc_node(LINE, $2); }
-     | '+' expr %prec tUNARY         { $$ = new mml::identity_node(LINE, $2); }
-     | '-' expr %prec tUNARY         { $$ = new cdk::neg_node(LINE, $2); }
-     | lval '?'                      { $$ = new mml::address_of_node(LINE, $1); }
-     | lval                          { $$ = new cdk::rvalue_node(LINE, $1); }  // FIXME: is this needed/in the right place?
-     | expr '*' expr	               { $$ = new cdk::mul_node(LINE, $1, $3); }
-     | expr '/' expr	               { $$ = new cdk::div_node(LINE, $1, $3); }
-     | expr '%' expr	               { $$ = new cdk::mod_node(LINE, $1, $3); }
-     | expr '+' expr	               { $$ = new cdk::add_node(LINE, $1, $3); }
-     | expr '-' expr	               { $$ = new cdk::sub_node(LINE, $1, $3); }
-     | expr '<' expr	               { $$ = new cdk::lt_node(LINE, $1, $3); }
-     | expr '>' expr	               { $$ = new cdk::gt_node(LINE, $1, $3); }
-     | expr tGE expr	               { $$ = new cdk::ge_node(LINE, $1, $3); }
-     | expr tLE expr                 { $$ = new cdk::le_node(LINE, $1, $3); }
-     | expr tEQ expr	               { $$ = new cdk::eq_node(LINE, $1, $3); }
-     | expr tNE expr	               { $$ = new cdk::ne_node(LINE, $1, $3); }
-     | tNOT expr %prec tUNARY        { $$ = new cdk::not_node(LINE, $2); }
-     | expr tAND expr                { $$ = new cdk::and_node(LINE, $1, $3); }
-     | expr tOR expr                 { $$ = new cdk::or_node(LINE, $1, $3); }
-     | lval '=' expr                 { $$ = new cdk::assignment_node(LINE, $1, $3); }
-     ;
+expressions : expression                                { $$ = new cdk::sequence_node(LINE, $1); }
+            | expressions expression                    { $$ = new cdk::sequence_node(LINE, $2, $1); }
+            ;
+
+expression : literal                             { $$ = $1; }
+           | '(' expression ')'                  { $$ = $2; }
+           | '[' expression ']'                  { $$ = new mml::stack_alloc_node(LINE, $2); }
+           | '+' expression %prec tUNARY         { $$ = new mml::identity_node(LINE, $2); }
+           | '-' expression %prec tUNARY         { $$ = new cdk::neg_node(LINE, $2); }
+           | lval '?'                            { $$ = new mml::address_of_node(LINE, $1); }
+           | lval                                { $$ = new cdk::rvalue_node(LINE, $1); }  // FIXME: is this needed/in the right place?
+           | expression '*' expression	         { $$ = new cdk::mul_node(LINE, $1, $3); }
+           | expression '/' expression	         { $$ = new cdk::div_node(LINE, $1, $3); }
+           | expression '%' expression	         { $$ = new cdk::mod_node(LINE, $1, $3); }
+           | expression '+' expression	         { $$ = new cdk::add_node(LINE, $1, $3); }
+           | expression '-' expression	         { $$ = new cdk::sub_node(LINE, $1, $3); }
+           | expression '<' expression	         { $$ = new cdk::lt_node(LINE, $1, $3); }
+           | expression '>' expression	         { $$ = new cdk::gt_node(LINE, $1, $3); }
+           | expression tGE expression           { $$ = new cdk::ge_node(LINE, $1, $3); }
+           | expression tLE expression           { $$ = new cdk::le_node(LINE, $1, $3); }
+           | expression tEQ expression	         { $$ = new cdk::eq_node(LINE, $1, $3); }
+           | expression tNE expression	         { $$ = new cdk::ne_node(LINE, $1, $3); }
+           | tNOT expression %prec tUNARY        { $$ = new cdk::not_node(LINE, $2); }
+           | expression tAND expression          { $$ = new cdk::and_node(LINE, $1, $3); }
+           | expression tOR expression           { $$ = new cdk::or_node(LINE, $1, $3); }
+           | lval '=' expression                 { $$ = new cdk::assignment_node(LINE, $1, $3); }
+           ;
+
+literal: integer                             { $$ = $1; }
+       | double                              { $$ = $1; }
+       | string                              { $$ = $1; }
+       | tNULLPTR                            { $$ = new mml::nullptr_node(LINE); }
+       ;
 
 integer : tINTEGER                   { $$ = new cdk::integer_node(LINE, $1); }
         ;
