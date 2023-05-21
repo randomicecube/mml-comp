@@ -36,6 +36,7 @@
 
   mml::block_node      *block;
   mml::declaration_node *declaration;
+  mml::function_definition_node *function_definition;
 };
 
 %token <i> tINTEGER
@@ -50,11 +51,12 @@
 %nonassoc tIF tELIF
 %nonassoc tELSE tWHILE
 
-%type <sequence> file global_declarations declarations instructions expressions
+%type <sequence> file global_declarations declarations instructions expressions opt_args args
 %type <expression> expression main integer double opt_init init literal
 %type <lvalue> lval
 %type <block> block
-%type <declaration> global_declaration declaration
+%type <declaration> global_declaration declaration arg
+%type <function_definition> fun_def
 %type <t> type auto
 %type <s> string
 
@@ -148,7 +150,7 @@ opt_init : /* empty */                            { $$ = nullptr; }
 init : '=' expression                             { $$ = $2; }
      ;
 
-declarations : declaration ';'	               { $$ = new cdk::sequence_node(LINE, $1); }
+declarations : declaration ';'	                  { $$ = new cdk::sequence_node(LINE, $1); }
              | declarations declaration ';'       { $$ = new cdk::sequence_node(LINE, $2, $1); }
              ;
 
@@ -214,7 +216,22 @@ expression : literal                             { $$ = $1; }
            | '@' '(' opt_expressions ')'         { $$ = new mml::function_call_node(LINE, nullptr, $3); }
            | lval                                { $$ = new cdk::rvalue_node(LINE, $1); }  // FIXME: is this needed/in the right place?
            | lval '=' expression                 { $$ = new cdk::assignment_node(LINE, $1, $3); }
+           | fun_def                             { $$ = $1; }
            ;
+
+fun_def : '(' opt_args ')' tARROW data_type block { $$ = new mml::function_definition_node(LINE, $5, $2, $6); }
+        ;
+
+opt_args : /* empty */                       { $$ = nullptr; }
+         | args                              { $$ = $1; }
+         ;
+
+args : arg                                   { $$ = new cdk::sequence_node(LINE, $1); }
+     | args ',' arg                          { $$ = new cdk::sequence_node(LINE, $3, $1); }
+     ;
+
+arg : data_type tIDENTIFIER                  { $$ = new mml::argument_node(LINE, $1, $3); }
+    ;
 
 literal: integer                             { $$ = $1; }
        | double                              { $$ = $1; }
