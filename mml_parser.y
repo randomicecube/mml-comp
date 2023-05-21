@@ -191,7 +191,6 @@ expression : literal                             { $$ = $1; }
            | '+' expression %prec tUNARY         { $$ = new mml::identity_node(LINE, $2); }
            | '-' expression %prec tUNARY         { $$ = new cdk::neg_node(LINE, $2); }
            | lval '?'                            { $$ = new mml::address_of_node(LINE, $1); }
-           | lval                                { $$ = new cdk::rvalue_node(LINE, $1); }  // FIXME: is this needed/in the right place?
            | expression '*' expression	         { $$ = new cdk::mul_node(LINE, $1, $3); }
            | expression '/' expression	         { $$ = new cdk::div_node(LINE, $1, $3); }
            | expression '%' expression	         { $$ = new cdk::mod_node(LINE, $1, $3); }
@@ -206,6 +205,9 @@ expression : literal                             { $$ = $1; }
            | tNOT expression %prec tUNARY        { $$ = new cdk::not_node(LINE, $2); }
            | expression tAND expression          { $$ = new cdk::and_node(LINE, $1, $3); }
            | expression tOR expression           { $$ = new cdk::or_node(LINE, $1, $3); }
+           | tSIZEOF '(' expression ')'          { $$ = new mml::sizeof_node(LINE, $3); }
+           | tINPUT                              { $$ = new mml::input_node(LINE); }
+           | lval                                { $$ = new cdk::rvalue_node(LINE, $1); }  // FIXME: is this needed/in the right place?
            | lval '=' expression                 { $$ = new cdk::assignment_node(LINE, $1, $3); }
            ;
 
