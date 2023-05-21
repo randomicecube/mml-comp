@@ -223,17 +223,18 @@ literal: integer                             { $$ = $1; }
        | tNULLPTR                            { $$ = new mml::nullptr_node(LINE); }
        ;
 
-integer : tINTEGER                   { $$ = new cdk::integer_node(LINE, $1); }
+integer : tINTEGER                           { $$ = new cdk::integer_node(LINE, $1); }
         ;
 
-double : tDOUBLE                     { $$ = new cdk::double_node(LINE, $1); }
+double : tDOUBLE                             { $$ = new cdk::double_node(LINE, $1); }
        ;
 
-string : tSTRING                     { $$ = $1; }
-       | string tSTRING              { $$ = $1; $$->append(*$2); delete $2; }
+string : tSTRING                             { $$ = $1; }
+       | string tSTRING                      { $$ = $1; $$->append(*$2); delete $2; }
        ;
 
-lval : tIDENTIFIER                   { $$ = new cdk::variable_node(LINE, $1); }
+lval : tIDENTIFIER                           { $$ = new cdk::variable_node(LINE, $1); }
+     | expression '[' expression ']'         { $$ = new mml::index_node(LINE, $1, $3); }
      ;
 
 %%
