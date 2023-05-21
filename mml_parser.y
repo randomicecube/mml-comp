@@ -181,6 +181,10 @@ else : tELSE instruction                                { $$ = $2; }
      | tELIF '(' expression ')' instruction else        { $$ = new mml::if_else_node(LINE, $3, $5, $6); }
      ;
 
+opt_expressions : /* empty */                          { $$ = nullptr; }
+                | expressions                          { $$ = $1; }
+                ;
+
 expressions : expression                                { $$ = new cdk::sequence_node(LINE, $1); }
             | expressions expression                    { $$ = new cdk::sequence_node(LINE, $2, $1); }
             ;
@@ -207,6 +211,8 @@ expression : literal                             { $$ = $1; }
            | expression tOR expression           { $$ = new cdk::or_node(LINE, $1, $3); }
            | tSIZEOF '(' expression ')'          { $$ = new mml::sizeof_node(LINE, $3); }
            | tINPUT                              { $$ = new mml::input_node(LINE); }
+           | expression '(' opt_expressions ')'  { $$ = new mml::function_call_node(LINE, $1, $3); }
+           | '@' '(' opt_expressions ')'         { $$ = new mml::function_call_node(LINE, nullptr, $3); }
            | lval                                { $$ = new cdk::rvalue_node(LINE, $1); }  // FIXME: is this needed/in the right place?
            | lval '=' expression                 { $$ = new cdk::assignment_node(LINE, $1, $3); }
            ;
