@@ -27,7 +27,7 @@
   int                   i;	/* integer value */
   double                d;	/* double value */
   std::string          *s;	/* symbol name or string literal */
-  cdk::basic_type      *t;	/* type */
+  std::shared_ptr<cdk::basic_type> t; /* type */
 
   cdk::basic_node      *node;	/* node pointer */
   cdk::sequence_node   *sequence;
@@ -51,14 +51,16 @@
 %nonassoc tIF tELIF
 %nonassoc tELSE tWHILE
 
-%type <sequence> file global_declarations declarations instructions expressions opt_args args
-%type <expression> expression main integer double opt_init init literal
+%type <sequence> file global_declarations declarations instructions opt_expressions expressions opt_args args data_types
+%type <expression> expression integer double opt_init init literal
 %type <lvalue> lval
-%type <block> block
+%type <block> inner_block block
 %type <declaration> global_declaration declaration arg
-%type <function_definition> fun_def
-%type <t> type auto
+%type <function_definition> main fun_def
+%type <node> instruction else
 %type <s> string
+%type <t> fun_type data_type void_type opt_auto
+// FIXME: Not sure if opt_auto is a t or an expression
 
 /* Associativity rules */
 
@@ -115,9 +117,9 @@ opt_auto: /* empty */                             { $$ = nullptr; }
 block : '{' inner_block '}'                       { $$ = $2; }
       ;
 
-inner_block : declarations instrs                 { $$ = new mml::block_node(LINE, $2, $3); }
-            | declarations                        { $$ = new mml::block_node(LINE, $2, nullptr); }
-            | instrs                              { $$ = new mml::block_node(LINE, nullptr, $2); }
+inner_block : declarations instructions                 { $$ = new mml::block_node(LINE, $1, $2); }
+            | declarations                        { $$ = new mml::block_node(LINE, $1, nullptr); }
+            | instructions                              { $$ = new mml::block_node(LINE, nullptr, $1); }
             |                                     { $$ = new mml::block_node(LINE, nullptr, nullptr); }
             ;
 
@@ -129,8 +131,8 @@ data_type : tSTRING_TYPE                          { $$ = cdk::primitive_type::cr
           | void_type                             { $$ = $1; }
           ;
 
-data_types : data_type                            { $$ = new std::vector<std::shared_ptr<cdk::basic_type>>(); $$->push_back($1); }
-           | data_types ',' data_type             { $$= $1; $$->push_back($3); }
+data_types : data_type                            { $$ = new std::vector<t>(); $$->push_back($1); }
+           | data_types ',' data_type             { $$ = $1; $$->push_back($3); }
            ;
 
 fun_type : data_type '<' data_types '>'           { $$ = cdk_function_type::create(*$3, $1); delete $3; }
@@ -231,12 +233,12 @@ args : arg                                   { $$ = new cdk::sequence_node(LINE,
      | args ',' arg                          { $$ = new cdk::sequence_node(LINE, $3, $1); }
      ;
 
-arg : data_type tIDENTIFIER                  { $$ = new mml::argument_node(LINE, $1, $3); }
+arg : data_type tIDENTIFIER                  { $$ = new mml::declaration_node(LINE, nullptr, $1, $2, nullptr); }
     ;
 
 literal: integer                             { $$ = $1; }
        | double                              { $$ = $1; }
-       | string                              { $$ = $1; }
+       | string                              { $$ = $$ = new cdk::string_node(LINE, $1); }
        | tNULLPTR                            { $$ = new mml::nullptr_node(LINE); }
        ;
 
