@@ -49,8 +49,11 @@
 %token tBEGIN tEND tARROW tNEXT tSTOP
 %token tINT_TYPE tDOUBLE_TYPE tSTRING_TYPE tVOID_TYPE tNULLPTR
 
-%nonassoc tIF tELIF
-%nonassoc tELSE tWHILE
+%nonassoc tIFX
+%nonassoc tIF
+%nonassoc tELIF
+%nonassoc tELSE
+%nonassoc tWHILE
 
 %type <sequence> file global_declarations declarations instructions opt_expressions expressions opt_args args
 %type <expression> expression integer double opt_init init literal
@@ -183,13 +186,13 @@ instruction : block                                     { $$ = $1; }
             | expressions tWRITELN                      { $$ = new mml::print_node(LINE, $1, true);  }
             ;
 
-conditional_instruction : tIF '(' expression ')' instruction         { $$ = new mml::if_node(LINE, $3, $5); }
-                        | tIF '(' expression ')' instruction else    { $$ = new mml::if_else_node(LINE, $3, $5, $6); }
+conditional_instruction : tIF '(' expression ')' instruction %prec tIFX         { $$ = new mml::if_node(LINE, $3, $5); }
+                        | tIF '(' expression ')' instruction else               { $$ = new mml::if_else_node(LINE, $3, $5, $6); }
                         ;
 
-else : tELSE instruction                                             { $$ = $2; }
-     | tELIF '(' expression ')' instruction                          { $$ = new mml::if_node(LINE, $3, $5); }
-     | tELIF '(' expression ')' instruction else                     { $$ = new mml::if_else_node(LINE, $3, $5, $6); }
+else : tELSE instruction                                                        { $$ = $2; }
+     | tELIF '(' expression ')' instruction  %prec tIFX                         { $$ = new mml::if_node(LINE, $3, $5); }
+     | tELIF '(' expression ')' instruction else                                { $$ = new mml::if_else_node(LINE, $3, $5, $6); }
      ;
 
 opt_expressions : /* empty */                          { $$ = nullptr; }
