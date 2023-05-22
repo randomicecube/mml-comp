@@ -183,13 +183,13 @@ instruction : block                                     { $$ = $1; }
             | expressions tWRITELN                      { $$ = new mml::print_node(LINE, $1, true);  }
             ;
 
-conditional_instruction : tIF '(' expression ')' block         { $$ = new mml::if_node(LINE, $3, $5); }
-                        | tIF '(' expression ')' block else    { $$ = new mml::if_else_node(LINE, $3, $5, $6); }
+conditional_instruction : tIF '(' expression ')' instruction         { $$ = new mml::if_node(LINE, $3, $5); }
+                        | tIF '(' expression ')' instruction else    { $$ = new mml::if_else_node(LINE, $3, $5, $6); }
                         ;
 
-else : tELSE instruction                                       { $$ = $2; }
-     | tELIF '(' expression ')' block                          { $$ = new mml::if_node(LINE, $3, $5); }
-     | tELIF '(' expression ')' block else                     { $$ = new mml::if_else_node(LINE, $3, $5, $6); }
+else : tELSE instruction                                             { $$ = $2; }
+     | tELIF '(' expression ')' instruction                          { $$ = new mml::if_node(LINE, $3, $5); }
+     | tELIF '(' expression ')' instruction else                     { $$ = new mml::if_else_node(LINE, $3, $5, $6); }
      ;
 
 opt_expressions : /* empty */                          { $$ = nullptr; }
