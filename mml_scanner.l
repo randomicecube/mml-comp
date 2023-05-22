@@ -100,9 +100,6 @@ static std::ostringstream strlit;
 <X_BACKSLASH>\"        strlit << '"'; yy_pop_state();
 <X_BACKSLASH>\\        strlit << '\\'; yy_pop_state();
 <X_BACKSLASH>0         yy_push_state(X_STRING_SKIP);
-
-<X_BACKSLASH>.         strlit << *yytext; yy_pop_state();
-
 <X_BACKSLASH>[0-7]{1,3}   {
                             const int c = std::stoul(yytext, NULL, 8);
                             if (c > 255) {
@@ -111,6 +108,7 @@ static std::ostringstream strlit;
                             strlit << (char) c; /* TODO: check whether it is also needed to cast to unsigned char, like in OG */
                             yy_pop_state(); 
                           }
+<X_BACKSLASH>.         strlit << *yytext; yy_pop_state();
 
 <X_STRING_SKIP>"\""        {
                               yylval.s = new std::string(strlit.str());
