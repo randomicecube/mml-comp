@@ -60,7 +60,7 @@
 %type <function_definition> main fun_def
 %type <node> instruction else arg
 %type <s> string
-%type <t> fun_type data_type void_type opt_auto
+%type <t> fun_type data_type void_pointer opt_auto
 %type <types> data_types
 // FIXME: Not sure if opt_auto is a t or an expression
 
@@ -130,22 +130,22 @@ data_type : tSTRING_TYPE                          { $$ = cdk::primitive_type::cr
           | tDOUBLE_TYPE                          { $$ = cdk::primitive_type::create(8, cdk::TYPE_DOUBLE); }
           | '[' data_type ']'                     { $$ = cdk::reference_type::create(4, $2); }
           | fun_type                              { $$ = $1; }
-          | void_type                             { $$ = $1; }
+          | void_pointer                          { $$ = $1; }
           ;
 
 data_types : data_type                            { $$ = new std::vector<std::shared_ptr<cdk::basic_type>>(); $$->push_back($1); }
            | data_types ',' data_type             { $$ = $1; $$->push_back($3); }
            ;
 
-fun_type : data_type '<' data_types '>'           { $$ = cdk::functional_type::create(*$3, $1); delete $3; }
-         | data_type '<'            '>'           { $$ = cdk::functional_type::create($1); }
-         | void_type '<' data_types '>'           { $$ = cdk::functional_type::create(*$3, $1); delete $3; }
-         | void_type '<'            '>'           { $$ = cdk::functional_type::create($1); }
+fun_type : data_type  '<' data_types '>'          { $$ = cdk::functional_type::create(*$3, $1); delete $3; }
+         | data_type  '<'            '>'          { $$ = cdk::functional_type::create($1); }
+         | tVOID_TYPE '<' data_types '>'          { $$ = cdk::functional_type::create(*$3, cdk::TYPE_VOID); delete $3; }
+         | tVOID_TYPE '<'            '>'          { $$ = cdk::functional_type::create(cdk::TYPE_VOID); }
          ;
 
-void_type : '[' tVOID_TYPE ']'                    { $$ = cdk::reference_type::create(4, cdk::primitive_type::create(0, cdk::TYPE_VOID)); }
-          | '[' void_type ']'                     { $$ = $2; }
-          ;
+/* There's no need for '[' void_pointer ']', as data_type already handles it */
+void_pointer : '[' tVOID_TYPE ']'                 { $$ = cdk::reference_type::create(4, cdk::primitive_type::create(0, cdk::TYPE_VOID)); }
+             ;
 
 opt_init : /* empty */                            { $$ = nullptr; }
          | init                                   { $$ = $1; }
@@ -191,7 +191,7 @@ opt_expressions : /* empty */                          { $$ = nullptr; }
                 ;
 
 expressions : expression                                { $$ = new cdk::sequence_node(LINE, $1); }
-            | expressions expression                    { $$ = new cdk::sequence_node(LINE, $2, $1); }
+            | expressions ',' expression                { $$ = new cdk::sequence_node(LINE, $3, $1); }
             ;
 
 expression : literal                             { $$ = $1; }
