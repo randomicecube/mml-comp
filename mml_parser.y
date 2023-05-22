@@ -58,9 +58,9 @@
 %type <block> inner_block block
 %type <declaration> global_declaration declaration
 %type <function_definition> main fun_def
-%type <node> instruction else arg
+%type <node> conditional_instruction instruction else arg
 %type <s> string
-%type <t> fun_type data_type void_pointer opt_auto
+%type <t> fun_type data_type void_type void_pointer opt_auto
 %type <types> data_types
 // FIXME: Not sure if opt_auto is a t or an expression
 
@@ -119,9 +119,9 @@ opt_auto: /* empty */                             { $$ = nullptr; }
 block : '{' inner_block '}'                       { $$ = $2; }
       ;
 
-inner_block : declarations instructions                 { $$ = new mml::block_node(LINE, $1, $2); }
+inner_block : declarations instructions           { $$ = new mml::block_node(LINE, $1, $2); }
             | declarations                        { $$ = new mml::block_node(LINE, $1, nullptr); }
-            | instructions                              { $$ = new mml::block_node(LINE, nullptr, $1); }
+            | instructions                        { $$ = new mml::block_node(LINE, nullptr, $1); }
             |                                     { $$ = new mml::block_node(LINE, nullptr, nullptr); }
             ;
 
@@ -139,12 +139,15 @@ data_types : data_type                            { $$ = new std::vector<std::sh
 
 fun_type : data_type  '<' data_types '>'          { $$ = cdk::functional_type::create(*$3, $1); delete $3; }
          | data_type  '<'            '>'          { $$ = cdk::functional_type::create($1); }
-         | tVOID_TYPE '<' data_types '>'          { $$ = cdk::functional_type::create(*$3, cdk::TYPE_VOID); delete $3; }
-         | tVOID_TYPE '<'            '>'          { $$ = cdk::functional_type::create(cdk::TYPE_VOID); }
+         | void_type '<' data_types '>'           { $$ = cdk::functional_type::create(*$3, $1); delete $3; }
+         | void_type '<'            '>'           { $$ = cdk::functional_type::create($1); }
          ;
 
+void_type : tVOID_TYPE                            { $$ = cdk::primitive_type::create(4, cdk::TYPE_VOID); }
+          ;
+
 /* There's no need for '[' void_pointer ']', as data_type already handles it */
-void_pointer : '[' tVOID_TYPE ']'                 { $$ = cdk::reference_type::create(4, cdk::primitive_type::create(0, cdk::TYPE_VOID)); }
+void_pointer : '[' void_type ']'                  { $$ = cdk::reference_type::create(4, $2); }
              ;
 
 opt_init : /* empty */                            { $$ = nullptr; }
@@ -167,8 +170,7 @@ instructions : instruction                        { $$ = new cdk::sequence_node(
              ;
 
 instruction : block                                     { $$ = $1; }
-            | tIF '(' expression ')' instruction        { $$ = new mml::if_node(LINE, $3, $5); }
-            | tIF '(' expression ')' instruction else   { $$ = new mml::if_else_node(LINE, $3, $5, $6); }
+            | conditional_instruction                   { $$ = $1; }
             | tWHILE '(' expression ')' instruction     { $$ = new mml::while_node(LINE, $3, $5); }
             | tSTOP ';'                                 { $$ = new mml::stop_node(LINE);  }
             | tSTOP tINTEGER ';'                        { $$ = new mml::stop_node(LINE, $2);  }
@@ -181,9 +183,13 @@ instruction : block                                     { $$ = $1; }
             | expressions tWRITELN                      { $$ = new mml::print_node(LINE, $1, true);  }
             ;
 
-else : tELSE instruction                                { $$ = $2; }
-     | tELIF '(' expression ')' instruction             { $$ = new mml::if_node(LINE, $3, $5); }
-     | tELIF '(' expression ')' instruction else        { $$ = new mml::if_else_node(LINE, $3, $5, $6); }
+conditional_instruction : tIF '(' expression ')' block         { $$ = new mml::if_node(LINE, $3, $5); }
+                        | tIF '(' expression ')' block else    { $$ = new mml::if_else_node(LINE, $3, $5, $6); }
+                        ;
+
+else : tELSE instruction                                       { $$ = $2; }
+     | tELIF '(' expression ')' block                          { $$ = new mml::if_node(LINE, $3, $5); }
+     | tELIF '(' expression ')' block else                     { $$ = new mml::if_else_node(LINE, $3, $5, $6); }
      ;
 
 opt_expressions : /* empty */                          { $$ = nullptr; }
