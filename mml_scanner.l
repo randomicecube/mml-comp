@@ -105,7 +105,7 @@ static std::ostringstream strlit;
                             if (c > 255) {
                               yyerror("octal escape sequence out of range");
                             }
-                            strlit << (char) c; /* TODO: check whether it is also needed to cast to unsigned char, like in OG */
+                            strlit << (char) c;
                             yy_pop_state(); 
                           }
 <X_BACKSLASH>.         strlit << *yytext; yy_pop_state();
@@ -200,7 +200,7 @@ static std::ostringstream strlit;
   /* ====================================================================== */
 
 
-[ \t\n\r]+             ; /* ignore whitespace */  /* TODO: check if we can use [[:space:]] instead */
+[ \t\n\r]+             ; /* ignore whitespace */
 
   /* ====================================================================== */
   /* ====[                    Everything else                         ]==== */
