@@ -57,7 +57,6 @@
 %right '='
 %left tOR
 %left tAND
-%nonassoc tNOT
 %left tGE tLE tEQ tNE '>' '<'
 %left '+' '-'
 %left '*' '/' '%'
