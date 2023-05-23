@@ -215,12 +215,11 @@ expression : literal                             { $$ = $1; }
            | tINPUT                              { $$ = new mml::input_node(LINE); }
            | expression '(' opt_expressions ')'  { $$ = new mml::function_call_node(LINE, $1, $3); }
            | '@' '(' opt_expressions ')'         { $$ = new mml::function_call_node(LINE, nullptr, $3); }
-           | lval                                { $$ = new cdk::rvalue_node(LINE, $1); }  // FIXME: is this needed/in the right place?
+           | lval                                { $$ = new cdk::rvalue_node(LINE, $1); }
            | lval '=' expression                 { $$ = new cdk::assignment_node(LINE, $1, $3); }
            | fun_def                             { $$ = $1; }
            ;
 
-/* TODO: check whether we can actually have data_type here, as the arguments shouldn't be, for example, void -- would this be checked in the type checker? */
 fun_def : '(' opt_args ')' tARROW data_type block { $$ = new mml::function_definition_node(LINE, $5, $2, $6); }
         ;
 
