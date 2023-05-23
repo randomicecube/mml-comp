@@ -25,6 +25,7 @@
   //-- don't change *any* of these --- END!
 
   int                   i;	/* integer value */
+  double                d;	/* double value */
   std::string          *s;	/* symbol name or string literal */
   cdk::basic_node      *node;	/* node pointer */
   cdk::sequence_node   *sequence;
@@ -33,23 +34,34 @@
 };
 
 %token <i> tINTEGER
+%token <d> tDOUBLE
 %token <s> tIDENTIFIER tSTRING
-%token tWHILE tIF tPRINT tINPUT tBEGIN tEND
+
+%token tWHILE tINPUT tWRITE tWRITELN tSIZEOF tRETURN
 %token tFOREIGN tFORWARD tPUBLIC tAUTO
+%token tBEGIN tEND tARROW tNEXT tSTOP
+%token tINT_TYPE tDOUBLE_TYPE tSTRING_TYPE tVOID_TYPE tNULLPTR
 
 %nonassoc tIFX
+%nonassoc tIF
+%nonassoc tELIF
 %nonassoc tELSE
-
-%right '='
-%left tGE tLE tEQ tNE '>' '<'
-%left '+' '-'
-%left '*' '/' '%'
-%nonassoc tUNARY
 
 %type <node> stmt /* program */
 %type <sequence> list
 %type <expression> expr
 %type <lvalue> lval
+
+/* Associativity rules */
+
+%right '='
+%left tOR
+%left tAND
+%left tGE tLE tEQ tNE '>' '<'
+%left '+' '-'
+%left '*' '/' '%'
+%nonassoc tUNARY
+%nonassoc '(' '['
 
 %{
 //-- The rules below will be included in yyparse, the main parsing function.
@@ -64,7 +76,7 @@ list : stmt	     { $$ = new cdk::sequence_node(LINE, $1); }
 	   ;
 
 stmt : expr ';'                         { $$ = new mml::evaluation_node(LINE, $1); }
- 	   | tPRINT expr ';'                  { /* $$ = new mml::print_node(LINE, $2); */ }
+ 	 /*  | tPRINT expr ';'                  { $$ = new mml::print_node(LINE, $2); } */
      | tINPUT                           { $$ = new mml::input_node(LINE); }
      | tWHILE '(' expr ')' stmt         { $$ = new mml::while_node(LINE, $3, $5); }
      | tIF '(' expr ')' stmt %prec tIFX { $$ = new mml::if_node(LINE, $3, $5); }
