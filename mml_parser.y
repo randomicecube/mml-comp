@@ -72,7 +72,6 @@
 %right '='
 %left tOR
 %left tAND
-%nonassoc tNOT
 %left tGE tLE tEQ tNE '>' '<'
 %left '+' '-'
 %left '*' '/' '%'
@@ -220,7 +219,7 @@ expression : literal                             { $$ = $1; }
            | expression tLE expression           { $$ = new cdk::le_node(LINE, $1, $3); }
            | expression tEQ expression	         { $$ = new cdk::eq_node(LINE, $1, $3); }
            | expression tNE expression	         { $$ = new cdk::ne_node(LINE, $1, $3); }
-           | tNOT expression %prec tUNARY        { $$ = new cdk::not_node(LINE, $2); }
+           | '~' expression %prec tUNARY         { $$ = new cdk::not_node(LINE, $2); }
            | expression tAND expression          { $$ = new cdk::and_node(LINE, $1, $3); }
            | expression tOR expression           { $$ = new cdk::or_node(LINE, $1, $3); }
            | tSIZEOF '(' expression ')'          { $$ = new mml::sizeof_node(LINE, $3); }
