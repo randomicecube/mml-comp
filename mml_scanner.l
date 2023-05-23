@@ -101,12 +101,16 @@ static std::ostringstream strlit;
 <X_BACKSLASH>\\        strlit << '\\'; yy_pop_state();
 <X_BACKSLASH>0         yy_push_state(X_STRING_SKIP);
 <X_BACKSLASH>[0-7]{1,3}   {
-                            const int c = std::stoul(yytext, NULL, 8);
-                            if (c > 255) {
+                            try {
+                              const int c = std::stoul(yytext, NULL, 8);
+                              if (c > 255) {
+                                yyerror("octal escape sequence out of range");
+                              }
+                              strlit << (char) c;
+                              yy_pop_state(); 
+                            } catch (const std::out_of_range &e) {
                               yyerror("octal escape sequence out of range");
                             }
-                            strlit << (char) c;
-                            yy_pop_state(); 
                           }
 <X_BACKSLASH>.         strlit << *yytext; yy_pop_state();
 
