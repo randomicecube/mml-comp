@@ -170,7 +170,7 @@ static std::ostringstream strlit;
   /* ====[                 7 - Expressões especiais                   ]==== */
   /* ====================================================================== */
 
-[-+*/%\[\]?=();,]     return *yytext;
+[-+*/%\[\]?=();,]      return *yytext;
 
 ">="                   return tGE; 
 "<="                   return tLE; 
