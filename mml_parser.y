@@ -28,7 +28,7 @@
   double                d;	/* double value */
   std::string          *s;	/* symbol name or string literal */
   std::shared_ptr<cdk::basic_type> t; /* type */
-	std::vector<std::shared_ptr<cdk::basic_type>> *types;
+  std::vector<std::shared_ptr<cdk::basic_type>> *types;
 
   cdk::basic_node      *node;	/* node pointer */
   cdk::sequence_node   *sequence;
