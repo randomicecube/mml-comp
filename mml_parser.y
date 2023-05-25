@@ -139,6 +139,9 @@ opt_init : /* empty */                            { $$ = nullptr; }
          | init                                   { $$ = $1; }
          ;
 
+init : '=' expression                             { $$ = $2; }
+     ;
+
 declarations : declaration ';'	                        { $$ = new cdk::sequence_node(LINE, $1); }
              | declarations declaration ';'             { $$ = new cdk::sequence_node(LINE, $2, $1); }
              ;
