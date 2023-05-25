@@ -27,7 +27,6 @@
   int                   i;	/* integer value */
   double                d;	/* double value */
   std::string          *s;	/* symbol name or string literal */
-  std::shared_ptr<cdk::basic_type> t; /* type */
   std::vector<std::shared_ptr<cdk::basic_type>> *types;
 
   cdk::basic_node      *node;	/* node pointer */
@@ -36,8 +35,6 @@
   cdk::lvalue_node     *lvalue;
 
   mml::block_node      *block;
-  mml::declaration_node *declaration;
-  mml::function_definition_node *function_definition;
 };
 
 %token <i> tINTEGER
@@ -49,34 +46,30 @@
 %token tBEGIN tEND tARROW tNEXT tSTOP
 %token tINT_TYPE tDOUBLE_TYPE tSTRING_TYPE tVOID_TYPE tNULLPTR
 
-%nonassoc tIFX
-%nonassoc tIF
-%nonassoc tELIF
-%nonassoc tELSE
-%nonassoc tWHILE
-
 %type <sequence> file global_declarations declarations instructions opt_expressions expressions opt_args args
-%type <expression> expression integer double opt_init init literal
+%type <expression> expression opt_init  literal fun_def init
 %type <lvalue> lval
 %type <block> inner_block block
-%type <declaration> global_declaration declaration
-%type <function_definition> main fun_def
-%type <node> conditional_instruction instruction else arg
+%type <node> main global_declaration declaration
+%type <node> conditional_instruction instruction else arg 
+
 %type <s> string
-%type <t> fun_type data_type void_type void_pointer opt_auto
+%type <type> fun_type data_type void_type void_pointer opt_auto
 %type <types> data_types
-// FIXME: Not sure if opt_auto is a t or an expression
 
 /* Associativity rules */
 
+%nonassoc tIF tWHILE
+%nonassoc tELIF tELSE
+
 %right '='
-%left tOR
-%left tAND
+%left tAND tOR
 %nonassoc '~'
-%left tGE tLE tEQ tNE '>' '<'
+%left tNE tEQ
+%left '<' tLE tGE '>'
 %left '+' '-'
 %left '*' '/' '%'
-%nonassoc tUNARY '?'
+%nonassoc tUNARY
 %nonassoc '(' '['
 
 %{
@@ -146,19 +139,16 @@ opt_init : /* empty */                            { $$ = nullptr; }
          | init                                   { $$ = $1; }
          ;
 
-init : '=' expression                             { $$ = $2; }
-     ;
-
-declarations : declaration ';'	                  { $$ = new cdk::sequence_node(LINE, $1); }
-             | declarations declaration ';'       { $$ = new cdk::sequence_node(LINE, $2, $1); }
+declarations : declaration ';'	                    { $$ = new cdk::sequence_node(LINE, $1); }
+             | declarations declaration ';'            { $$ = new cdk::sequence_node(LINE, $2, $1); }
              ;
 
-declaration : data_type tIDENTIFIER opt_init      { $$ = new mml::declaration_node(LINE, tPRIVATE, $1, *$2, $3); }
-            | tAUTO     tIDENTIFIER init          { $$ = new mml::declaration_node(LINE, tPRIVATE, nullptr, *$2, $3); }
+declaration : data_type tIDENTIFIER opt_init           { $$ = new mml::declaration_node(LINE, tPRIVATE, $1, *$2, $3); }
+            | tAUTO     tIDENTIFIER init               { $$ = new mml::declaration_node(LINE, tPRIVATE, nullptr, *$2, $3); }
             ;
 
-instructions : instruction                        { $$ = new cdk::sequence_node(LINE, $1); }
-             | instructions instruction           { $$ = new cdk::sequence_node(LINE, $2, $1); }
+instructions : instruction                             { $$ = new cdk::sequence_node(LINE, $1); }
+             | instructions instruction                { $$ = new cdk::sequence_node(LINE, $2, $1); }
              ;
 
 instruction : block                                     { $$ = $1; }
@@ -175,12 +165,12 @@ instruction : block                                     { $$ = $1; }
             | expressions tWRITELN                      { $$ = new mml::print_node(LINE, $1, true);  }
             ;
 
-conditional_instruction : tIF '(' expression ')' instruction %prec tIFX         { $$ = new mml::if_node(LINE, $3, $5); }
+conditional_instruction : tIF '(' expression ')' instruction %prec tIF         { $$ = new mml::if_node(LINE, $3, $5); }
                         | tIF '(' expression ')' instruction else               { $$ = new mml::if_else_node(LINE, $3, $5, $6); }
                         ;
 
 else : tELSE instruction                                                        { $$ = $2; }
-     | tELIF '(' expression ')' instruction  %prec tIFX                         { $$ = new mml::if_node(LINE, $3, $5); }
+     | tELIF '(' expression ')' instruction  %prec tIF                         { $$ = new mml::if_node(LINE, $3, $5); }
      | tELIF '(' expression ')' instruction else                                { $$ = new mml::if_else_node(LINE, $3, $5, $6); }
      ;
 
@@ -235,16 +225,10 @@ args : arg                                   { $$ = new cdk::sequence_node(LINE,
 arg : data_type tIDENTIFIER                  { $$ = new mml::declaration_node(LINE, tPRIVATE, $1, *$2, NULL); delete $2; }
     ;
 
-literal: integer                             { $$ = $1; }
-       | double                              { $$ = $1; }
+literal: tINTEGER                            { $$ = new cdk::integer_node(LINE, $1); }
+       | tDOUBLE                             { $$ = new cdk::double_node(LINE, $1); }
        | string                              { $$ = new cdk::string_node(LINE, $1); }
        | tNULLPTR                            { $$ = new mml::nullptr_node(LINE); }
-       ;
-
-integer : tINTEGER                           { $$ = new cdk::integer_node(LINE, $1); }
-        ;
-
-double : tDOUBLE                             { $$ = new cdk::double_node(LINE, $1); }
        ;
 
 string : tSTRING                             { $$ = $1; }
