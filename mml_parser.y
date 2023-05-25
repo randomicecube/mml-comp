@@ -139,16 +139,16 @@ opt_init : /* empty */                            { $$ = nullptr; }
          | init                                   { $$ = $1; }
          ;
 
-declarations : declaration ';'	                    { $$ = new cdk::sequence_node(LINE, $1); }
-             | declarations declaration ';'            { $$ = new cdk::sequence_node(LINE, $2, $1); }
+declarations : declaration ';'	                        { $$ = new cdk::sequence_node(LINE, $1); }
+             | declarations declaration ';'             { $$ = new cdk::sequence_node(LINE, $2, $1); }
              ;
 
-declaration : data_type tIDENTIFIER opt_init           { $$ = new mml::declaration_node(LINE, tPRIVATE, $1, *$2, $3); }
-            | tAUTO     tIDENTIFIER init               { $$ = new mml::declaration_node(LINE, tPRIVATE, nullptr, *$2, $3); }
+declaration : data_type tIDENTIFIER opt_init            { $$ = new mml::declaration_node(LINE, tPRIVATE, $1, *$2, $3); }
+            | tAUTO     tIDENTIFIER init                { $$ = new mml::declaration_node(LINE, tPRIVATE, nullptr, *$2, $3); }
             ;
 
-instructions : instruction                             { $$ = new cdk::sequence_node(LINE, $1); }
-             | instructions instruction                { $$ = new cdk::sequence_node(LINE, $2, $1); }
+instructions : instruction                              { $$ = new cdk::sequence_node(LINE, $1); }
+             | instructions instruction                 { $$ = new cdk::sequence_node(LINE, $2, $1); }
              ;
 
 instruction : block                                     { $$ = $1; }
@@ -165,12 +165,12 @@ instruction : block                                     { $$ = $1; }
             | expressions tWRITELN                      { $$ = new mml::print_node(LINE, $1, true);  }
             ;
 
-conditional_instruction : tIF '(' expression ')' instruction %prec tIF         { $$ = new mml::if_node(LINE, $3, $5); }
+conditional_instruction : tIF '(' expression ')' instruction %prec tIF          { $$ = new mml::if_node(LINE, $3, $5); }
                         | tIF '(' expression ')' instruction else               { $$ = new mml::if_else_node(LINE, $3, $5, $6); }
                         ;
 
 else : tELSE instruction                                                        { $$ = $2; }
-     | tELIF '(' expression ')' instruction  %prec tIF                         { $$ = new mml::if_node(LINE, $3, $5); }
+     | tELIF '(' expression ')' instruction  %prec tIF                          { $$ = new mml::if_node(LINE, $3, $5); }
      | tELIF '(' expression ')' instruction else                                { $$ = new mml::if_else_node(LINE, $3, $5, $6); }
      ;
 
