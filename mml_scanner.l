@@ -193,7 +193,7 @@ static std::ostringstream strlit;
   /* ====[                3.7 - Identificadores (nomes)               ]==== */
   /* ====================================================================== */
 
-[A-Za-z][A-Za-z0-9_]*  yylval.s = new std::string(yytext); return tIDENTIFIER;
+[A-Za-z][A-Za-z0-9]*  yylval.s = new std::string(yytext); return tIDENTIFIER;
 
   /* ====================================================================== */
   /* ====[                    3.1 - Caracteres brancos                ]==== */
