@@ -364,8 +364,8 @@ void mml::xml_writer::do_function_definition_node(
     mml::function_definition_node *const node, int lvl) {
   // ASSERT_SAFE_EXPRESSIONS;
   os() << std::string(lvl, ' ') << "<" << node->label() << " type='"
-       << cdk::to_string(node->type()) << "' main='" << node->main() << "'>"
-       << std::endl;
+       << cdk::to_string(node->type()) << "' main='" << std::noboolalpha
+       << node->main() << std::boolalpha << "'>" << std::endl;
   if (node->arguments()) {
     openTag("arguments", lvl + 2);
     node->arguments()->accept(this, lvl + 4);
