@@ -97,11 +97,11 @@ global_declaration : tFOREIGN  fun_type  tIDENTIFIER                            
                    | declaration                                                { $$ = $1; }
                    ;
 
-opt_auto: /* empty */                             { $$ = cdk::primitive_type::create(4, cdk::TYPE_UNSPEC); }
+opt_auto: /* empty */                             { $$ = nullptr; }
         | auto                                    { $$ = $1; }
         ;
 
-auto : tAUTO                                      { $$ = cdk::primitive_type::create(4, cdk::TYPE_UNSPEC); }
+auto : tAUTO                                      { $$ = nullptr; }
      ;
 
 block : '{' inner_block '}'                       { $$ = $2; }

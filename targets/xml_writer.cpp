@@ -273,12 +273,15 @@ void mml::xml_writer::do_declaration_node(mml::declaration_node *const node,
                                           int lvl) {
   // ASSERT_SAFE_EXPRESSIONS;
   const std::string qualifier = get_qualifier(node->qualifier());
-
   // cdk::to_string(node->type()) won't properly work with the auto keyword
   // until the type checker is properly implemented
+  const std::string type = (node->type() == nullptr)
+                               ? "unknown"
+                               : xml_escaped(cdk::to_string(node->type()));
+
   os() << std::string(lvl, ' ') << "<" << node->label() << " qualifier='"
        << qualifier << "' identifier='" << node->identifier() << "' type='"
-       << xml_escaped(cdk::to_string(node->type())) << "'>" << std::endl;
+       << type << "'>" << std::endl;
 
   if (node->init()) {
     openTag("init", lvl + 2);
@@ -386,8 +389,9 @@ void mml::xml_writer::do_function_definition_node(
     mml::function_definition_node *const node, int lvl) {
   // ASSERT_SAFE_EXPRESSIONS;
   os() << std::string(lvl, ' ') << "<" << node->label() << " type='"
-       << xml_escaped(cdk::to_string(node->type())) << "' main='" << std::noboolalpha
-       << node->main() << std::boolalpha << "'>" << std::endl;
+       << xml_escaped(cdk::to_string(node->type())) << "' main='"
+       << std::noboolalpha << node->main() << std::boolalpha << "'>"
+       << std::endl;
   if (node->arguments()) {
     openTag("arguments", lvl + 2);
     node->arguments()->accept(this, lvl + 4);
