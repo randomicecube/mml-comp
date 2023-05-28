@@ -220,7 +220,7 @@ expression : literal                             { $$ = $1; }
 fun_def : '(' opt_args ')' tARROW return_type block { $$ = new mml::function_definition_node(LINE, $5, $2, $6); }
         ;
 
-opt_args : /* empty */                       { $$ = nullptr; }
+opt_args : /* empty */                       { $$ = new cdk::sequence_node(LINE); }
          | args                              { $$ = $1; }
          ;
 
