@@ -67,7 +67,7 @@
 %nonassoc '~'
 %left tNE tEQ
 %left '<' tLE tGE '>'
-%left '+' '-'
+%left '+' '-' '?'
 %left '*' '/' '%'
 %nonassoc tUNARY
 %nonassoc '(' '['
