@@ -15,15 +15,24 @@
 
 void mml::type_checker::do_sequence_node(cdk::sequence_node *const node,
                                          int lvl) {
-  // EMPTY
+  for (auto n : node->nodes())
+    n->accept(this, lvl);
 }
 
-//---------------------------------------------------------------------------
+//--------------------------PURPOSEFULLY EMPTY----------------------------------
 
 void mml::type_checker::do_nil_node(cdk::nil_node *const node, int lvl) {
   // EMPTY
 }
 void mml::type_checker::do_data_node(cdk::data_node *const node, int lvl) {
+  // EMPTY
+}
+
+void mml::type_checker::do_stop_node(mml::stop_node *const node, int lvl) {
+  // EMPTY
+}
+
+void mml::type_checker::do_next_node(mml::next_node *const node, int lvl) {
   // EMPTY
 }
 
@@ -200,16 +209,6 @@ void mml::type_checker::do_if_else_node(mml::if_else_node *const node,
   node->condition()->accept(this, lvl + 4);
 }
 
-void mml::type_checker::do_stop_node(mml::stop_node *const node, int lvl) {
-  // FIXME: currently empty in order to compile, isn't required for the first
-  // delivery
-}
-
-void mml::type_checker::do_next_node(mml::next_node *const node, int lvl) {
-  // FIXME: currently empty in order to compile, isn't required for the first
-  // delivery
-}
-
 void mml::type_checker::do_return_node(mml::return_node *const node, int lvl) {
   // FIXME: currently empty in order to compile, isn't required for the first
   // delivery
@@ -219,8 +218,9 @@ void mml::type_checker::do_return_node(mml::return_node *const node, int lvl) {
 
 void mml::type_checker::do_nullptr_node(mml::nullptr_node *const node,
                                         int lvl) {
-  // FIXME: currently empty in order to compile, isn't required for the first
-  // delivery
+  ASSERT_UNSPEC;
+  // TODO: check if this is correct;; in MML, expressions are always int
+  node->type(cdk::reference_type::create(4, cdk::primitive_type::create(4, cdk::TYPE_INT)));
 }
 
 //---------------------------------------------------------------------------
@@ -241,23 +241,31 @@ void mml::type_checker::do_block_node(mml::block_node *const node, int lvl) {
 //---------------------------------------------------------------------------
 
 void mml::type_checker::do_input_node(mml::input_node *const node, int lvl) {
-  // FIXME: currently empty in order to compile, isn't required for the first
-  // delivery
+  ASSERT_UNSPEC;
+  // TODO: check if this is correct;; in MML, expressions are always int
+  node->type(cdk::primitive_type::create(4, cdk::TYPE_INT));
 }
 
 //---------------------------------------------------------------------------
 
+// note that it can't be processed as a "regular" unary expression,
+// as it may not only be an integer, but also a real
 void mml::type_checker::do_identity_node(mml::identity_node *const node,
                                          int lvl) {
-  // FIXME: currently empty in order to compile, isn't required for the first
-  // delivery
+  ASSERT_UNSPEC;
+  node->argument()->accept(this, lvl + 2);
+  const auto &type = node->argument()->type();
+  if (!(type->name() == cdk::TYPE_INT || type->name() == cdk::TYPE_DOUBLE))
+    throw std::string("wrong type in argument of identity expression");
+  node->type(type);
 }
 
 //---------------------------------------------------------------------------
 
 void mml::type_checker::do_sizeof_node(mml::sizeof_node *const node, int lvl) {
-  // FIXME: currently empty in order to compile, isn't required for the first
-  // delivery
+  ASSERT_UNSPEC;
+  node->argument()->accept(this, lvl + 2);
+  node->type(cdk::primitive_type::create(4, cdk::TYPE_INT));
 }
 
 //---------------------------------------------------------------------------
@@ -271,16 +279,23 @@ void mml::type_checker::do_index_node(mml::index_node *const node, int lvl) {
 
 void mml::type_checker::do_stack_alloc_node(mml::stack_alloc_node *const node,
                                             int lvl) {
-  // FIXME: currently empty in order to compile, isn't required for the first
-  // delivery
+  ASSERT_UNSPEC;
+  node->argument()->accept(this, lvl + 2);
+  if (!node->argument()->is_typed(cdk::TYPE_INT))
+    throw std::string("wrong type in argument of stack_alloc expression");
+  node->type(
+    // TODO: check if this is correct;; in MML, expressions are always int
+    cdk::reference_type::create(4, cdk::primitive_type::create(4, cdk::TYPE_INT))
+  );
 }
 
 //---------------------------------------------------------------------------
 
 void mml::type_checker::do_address_of_node(mml::address_of_node *const node,
                                            int lvl) {
-  // FIXME: currently empty in order to compile, isn't required for the first
-  // delivery
+  ASSERT_UNSPEC;
+  node->lvalue()->accept(this, lvl + 2);
+  node->type(cdk::reference_type::create(4, node->lvalue()->type()));
 }
 
 //---------------------------------------------------------------------------
