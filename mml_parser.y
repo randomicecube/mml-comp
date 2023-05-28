@@ -54,7 +54,7 @@
 %type <node> conditional_instruction instruction else arg 
 
 %type <s> string
-%type <type> fun_type data_type void_type void_pointer opt_auto
+%type <type> fun_type data_type void_type void_pointer opt_auto auto return_type
 %type <types> data_types
 
 /* Associativity rules */
@@ -97,9 +97,12 @@ global_declaration : tFOREIGN  fun_type  tIDENTIFIER                            
                    | declaration                                                { $$ = $1; }
                    ;
 
-opt_auto: /* empty */                             { $$ = nullptr; }
-        | tAUTO                                   { $$ = nullptr; }
+opt_auto: /* empty */                             { $$ = cdk::primitive_type::create(4, cdk::TYPE_UNSPEC); }
+        | auto                                    { $$ = $1; }
         ;
+
+auto : tAUTO                                      { $$ = cdk::primitive_type::create(4, cdk::TYPE_UNSPEC); }
+     ;
 
 block : '{' inner_block '}'                       { $$ = $2; }
       ;
@@ -146,8 +149,8 @@ declarations : declaration ';'	                        { $$ = new cdk::sequence_
              | declarations declaration ';'             { $$ = new cdk::sequence_node(LINE, $2, $1); }
              ;
 
-declaration : data_type tIDENTIFIER opt_init            { $$ = new mml::declaration_node(LINE, tPRIVATE, $1, *$2, $3); }
-            | tAUTO     tIDENTIFIER init                { $$ = new mml::declaration_node(LINE, tPRIVATE, nullptr, *$2, $3); }
+declaration : data_type tIDENTIFIER opt_init            { $$ = new mml::declaration_node(LINE, tPRIVATE, $1, *$2, $3); delete $2; }
+            | auto      tIDENTIFIER init                { $$ = new mml::declaration_node(LINE, tPRIVATE, $1, *$2, $3); delete $2; }
             ;
 
 instructions : instruction                              { $$ = new cdk::sequence_node(LINE, $1); }
