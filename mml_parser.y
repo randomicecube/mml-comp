@@ -54,8 +54,8 @@
 %type <node> conditional_instruction instruction else arg 
 
 %type <s> string
-%type <type> fun_type data_type void_type void_pointer opt_auto auto return_type
-%type <types> data_types
+%type <type> fun_type data_type void_type fun_pointer data_pointer void_pointer opt_auto auto return_type var_type
+%type <types> var_types
 
 /* Associativity rules */
 
@@ -91,8 +91,8 @@ global_declarations : global_declaration ';'                                    
                     ;
 
 global_declaration : tFOREIGN  fun_type  tIDENTIFIER                            { $$ = new mml::declaration_node(LINE, tFOREIGN, $2, *$3, nullptr); delete $3; }
-                   | tFORWARD  data_type tIDENTIFIER                            { $$ = new mml::declaration_node(LINE, tFORWARD, $2, *$3, nullptr); delete $3; }
-                   | tPUBLIC   data_type tIDENTIFIER opt_init                   { $$ = new mml::declaration_node(LINE, tPUBLIC, $2, *$3, $4); delete $3; }
+                   | tFORWARD  var_type tIDENTIFIER                             { $$ = new mml::declaration_node(LINE, tFORWARD, $2, *$3, nullptr); delete $3; }
+                   | tPUBLIC   var_type tIDENTIFIER opt_init                    { $$ = new mml::declaration_node(LINE, tPUBLIC, $2, *$3, $4); delete $3; }
                    | tPUBLIC   opt_auto  tIDENTIFIER opt_init                   { $$ = new mml::declaration_node(LINE, tPUBLIC, $2, *$3, $4); delete $3; }
                    | declaration                                                { $$ = $1; }
                    ;
@@ -113,29 +113,39 @@ inner_block : declarations instructions           { $$ = new mml::block_node(LIN
             |                                     { $$ = new mml::block_node(LINE, nullptr, nullptr); }
             ;
 
-data_type : tSTRING_TYPE                          { $$ = cdk::primitive_type::create(4, cdk::TYPE_STRING); }
-          | tINT_TYPE                             { $$ = cdk::primitive_type::create(4, cdk::TYPE_INT); }
-          | tDOUBLE_TYPE                          { $$ = cdk::primitive_type::create(8, cdk::TYPE_DOUBLE); }
-          | '[' data_type ']'                     { $$ = cdk::reference_type::create(4, $2); }
+var_types : var_type                              { $$ = new std::vector<std::shared_ptr<cdk::basic_type>>(); $$->push_back($1); }
+           | var_types ',' var_type               { $$ = $1; $$->push_back($3); }
+           ;
+
+var_type : data_type                              { $$ = $1; }
+          | data_pointer                          { $$ = $1; }
           | fun_type                              { $$ = $1; }
+          | fun_pointer                           { $$ = $1; }
           | void_pointer                          { $$ = $1; }
           ;
 
-data_types : data_type                            { $$ = new std::vector<std::shared_ptr<cdk::basic_type>>(); $$->push_back($1); }
-           | data_types ',' data_type             { $$ = $1; $$->push_back($3); }
-           ;
+data_type : tSTRING_TYPE                          { $$ = cdk::primitive_type::create(4, cdk::TYPE_STRING); }
+          | tINT_TYPE                             { $$ = cdk::primitive_type::create(4, cdk::TYPE_INT); }
+          | tDOUBLE_TYPE                          { $$ = cdk::primitive_type::create(8, cdk::TYPE_DOUBLE); }
+          ;
 
-fun_type : data_type '<' data_types '>'           { $$ = cdk::functional_type::create(*$3, $1); delete $3; }
-         | data_type '<'            '>'           { $$ = cdk::functional_type::create($1); }
-         | void_type '<' data_types '>'           { $$ = cdk::functional_type::create(*$3, $1); delete $3; }
-         | void_type '<'            '>'           { $$ = cdk::functional_type::create($1); }
+data_pointer : '[' data_pointer ']'               { $$ = $2; } 
+             | '[' data_type ']'                  { $$ = cdk::reference_type::create(4, $2); }
+             ;
+
+fun_type : return_type '<' var_types '>'          { $$ = cdk::functional_type::create(*$3, $1); delete $3; }
+         | return_type '<'            '>'         { $$ = cdk::functional_type::create($1); }
          ;
+
+fun_pointer : '[' fun_pointer ']'                 { $$ = $2; } 
+            | '[' fun_type ']'                    { $$ = cdk::reference_type::create(4, $2); }
+            ;
 
 void_type : tVOID_TYPE                            { $$ = cdk::primitive_type::create(4, cdk::TYPE_VOID); }
           ;
 
-/* There's no need for '[' void_pointer ']', as data_type already handles it */
-void_pointer : '[' void_type ']'                  { $$ = cdk::reference_type::create(4, $2); }
+void_pointer : '[' void_pointer ']'               { $$ = $2; } 
+             | '[' void_type ']'                  { $$ = cdk::reference_type::create(4, $2); }
              ;
 
 opt_init : /* empty */                            { $$ = nullptr; }
@@ -149,7 +159,7 @@ declarations : declaration ';'	                        { $$ = new cdk::sequence_
              | declarations declaration ';'             { $$ = new cdk::sequence_node(LINE, $2, $1); }
              ;
 
-declaration : data_type tIDENTIFIER opt_init            { $$ = new mml::declaration_node(LINE, tPRIVATE, $1, *$2, $3); delete $2; }
+declaration : var_type tIDENTIFIER opt_init             { $$ = new mml::declaration_node(LINE, tPRIVATE, $1, *$2, $3); delete $2; }
             | auto      tIDENTIFIER init                { $$ = new mml::declaration_node(LINE, tPRIVATE, $1, *$2, $3); delete $2; }
             ;
 
@@ -180,8 +190,8 @@ else : tELSE instruction                                                        
      | tELIF '(' expression ')' instruction else                                { $$ = new mml::if_else_node(LINE, $3, $5, $6); }
      ;
 
-opt_expressions : /* empty */                          { $$ = nullptr; }
-                | expressions                          { $$ = $1; }
+opt_expressions : /* empty */                           { $$ = nullptr; }
+                | expressions                           { $$ = $1; }
                 ;
 
 expressions : expression                                { $$ = new cdk::sequence_node(LINE, $1); }
@@ -228,10 +238,10 @@ args : arg                                   { $$ = new cdk::sequence_node(LINE,
      | args ',' arg                          { $$ = new cdk::sequence_node(LINE, $3, $1); }
      ;
 
-arg : data_type tIDENTIFIER                  { $$ = new mml::declaration_node(LINE, tPRIVATE, $1, *$2, NULL); delete $2; }
+arg : var_type tIDENTIFIER                   { $$ = new mml::declaration_node(LINE, tPRIVATE, $1, *$2, NULL); delete $2; }
     ;
 
-return_type : data_type                      { $$ = $1; }
+return_type : var_type                       { $$ = $1; }
             | void_type                      { $$ = $1; }
             ;
 
