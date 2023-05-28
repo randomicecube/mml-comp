@@ -164,7 +164,7 @@ instruction : block                                     { $$ = $1; }
             | tSTOP tINTEGER ';'                        { $$ = new mml::stop_node(LINE, $2);  }
             | tNEXT ';'                                 { $$ = new mml::next_node(LINE); }
             | tNEXT tINTEGER ';'                        { $$ = new mml::next_node(LINE, $2); }
-            | tRETURN ';'                               { $$ = new mml::return_node(LINE, nullptr); }
+            | tRETURN ';'                               { $$ = new mml::return_node(LINE); }
             | tRETURN expression ';'                    { $$ = new mml::return_node(LINE, $2);      }
             | expression ';'                            { $$ = new mml::evaluation_node(LINE, $1); }
             | expressions tWRITE                        { $$ = new mml::print_node(LINE, $1, false); }
@@ -217,7 +217,7 @@ expression : literal                             { $$ = $1; }
            | fun_def                             { $$ = $1; }
            ;
 
-fun_def : '(' opt_args ')' tARROW data_type block { $$ = new mml::function_definition_node(LINE, $5, $2, $6); }
+fun_def : '(' opt_args ')' tARROW return_type block { $$ = new mml::function_definition_node(LINE, $5, $2, $6); }
         ;
 
 opt_args : /* empty */                       { $$ = nullptr; }
@@ -230,6 +230,10 @@ args : arg                                   { $$ = new cdk::sequence_node(LINE,
 
 arg : data_type tIDENTIFIER                  { $$ = new mml::declaration_node(LINE, tPRIVATE, $1, *$2, NULL); delete $2; }
     ;
+
+return_type : data_type                      { $$ = $1; }
+            | void_type                      { $$ = $1; }
+            ;
 
 literal: tINTEGER                            { $$ = new cdk::integer_node(LINE, $1); }
        | tDOUBLE                             { $$ = new cdk::double_node(LINE, $1); }
