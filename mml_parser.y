@@ -125,8 +125,8 @@ data_types : data_type                            { $$ = new std::vector<std::sh
            | data_types ',' data_type             { $$ = $1; $$->push_back($3); }
            ;
 
-fun_type : data_type  '<' data_types '>'          { $$ = cdk::functional_type::create(*$3, $1); delete $3; }
-         | data_type  '<'            '>'          { $$ = cdk::functional_type::create($1); }
+fun_type : data_type '<' data_types '>'           { $$ = cdk::functional_type::create(*$3, $1); delete $3; }
+         | data_type '<'            '>'           { $$ = cdk::functional_type::create($1); }
          | void_type '<' data_types '>'           { $$ = cdk::functional_type::create(*$3, $1); delete $3; }
          | void_type '<'            '>'           { $$ = cdk::functional_type::create($1); }
          ;

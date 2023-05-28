@@ -13,7 +13,7 @@ const std::map<int, std::string> _qualifiers = {{tPUBLIC, "public"},
                                                 {tFORWARD, "forward"},
                                                 {tAUTO, "auto"}};
 
-std::string getQualifier(int qualifier) {
+std::string get_qualifier(int qualifier) {
   auto it = _qualifiers.find(qualifier);
   if (it != _qualifiers.end())
     return it->second;
@@ -250,10 +250,10 @@ void mml::xml_writer::do_nullptr_node(mml::nullptr_node *const node, int lvl) {
 void mml::xml_writer::do_declaration_node(mml::declaration_node *const node,
                                           int lvl) {
   // ASSERT_SAFE_EXPRESSIONS;
-  const std::string qualifier = getQualifier(node->qualifier());
+  const std::string qualifier = get_qualifier(node->qualifier());
 
-  // cdk::to_string(node->type()) won't properly work with the auto keyword until
-  // the type checker is properly implemented
+  // cdk::to_string(node->type()) won't properly work with the auto keyword
+  // until the type checker is properly implemented
   os() << std::string(lvl, ' ') << "<" << node->label() << " qualifier='"
        << qualifier << "' identifier='" << node->identifier() << "' type='"
        << cdk::to_string(node->type()) << "'>" << std::endl;
@@ -346,9 +346,9 @@ void mml::xml_writer::do_function_call_node(mml::function_call_node *const node,
   // ASSERT_SAFE_EXPRESSIONS;
   openTag(node, lvl);
   openTag("function", lvl + 2);
-	// if the function is NULL, the call is recursive
-	if (node->function())
-  	node->function()->accept(this, lvl + 4);
+  // if the function is NULL, the call is recursive
+  if (node->function())
+    node->function()->accept(this, lvl + 4);
   closeTag("function", lvl + 2);
   if (node->arguments()) {
     openTag("arguments", lvl + 2);
