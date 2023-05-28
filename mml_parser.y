@@ -90,10 +90,10 @@ global_declarations : global_declaration ';'                                    
                     | global_declarations global_declaration ';'                { $$ = new cdk::sequence_node(LINE, $2, $1); }
                     ;
 
-global_declaration : tFOREIGN  fun_type  tIDENTIFIER                            { $$ = new mml::declaration_node(LINE, tFOREIGN, $2, *$3, nullptr); }
-                   | tFORWARD  data_type tIDENTIFIER                            { $$ = new mml::declaration_node(LINE, tFORWARD, $2, *$3, nullptr); }
-                   | tPUBLIC   data_type tIDENTIFIER opt_init                   { $$ = new mml::declaration_node(LINE, tPUBLIC, $2, *$3, $4); }
-                   | tPUBLIC   opt_auto  tIDENTIFIER opt_init                   { $$ = new mml::declaration_node(LINE, tPUBLIC, $2, *$3, $4); }
+global_declaration : tFOREIGN  fun_type  tIDENTIFIER                            { $$ = new mml::declaration_node(LINE, tFOREIGN, $2, *$3, nullptr); delete $3; }
+                   | tFORWARD  data_type tIDENTIFIER                            { $$ = new mml::declaration_node(LINE, tFORWARD, $2, *$3, nullptr); delete $3; }
+                   | tPUBLIC   data_type tIDENTIFIER opt_init                   { $$ = new mml::declaration_node(LINE, tPUBLIC, $2, *$3, $4); delete $3; }
+                   | tPUBLIC   opt_auto  tIDENTIFIER opt_init                   { $$ = new mml::declaration_node(LINE, tPUBLIC, $2, *$3, $4); delete $3; }
                    | declaration                                                { $$ = $1; }
                    ;
 
