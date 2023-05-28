@@ -3,6 +3,8 @@
 #include <cdk/types/primitive_type.h>
 #include <string>
 
+#include <mml_parser.tab.h>
+
 #define ASSERT_UNSPEC                                                          \
   {                                                                            \
     if (node->type() != nullptr && !node->is_typed(cdk::TYPE_UNSPEC))          \
@@ -24,18 +26,6 @@ void mml::type_checker::do_nil_node(cdk::nil_node *const node, int lvl) {
 void mml::type_checker::do_data_node(cdk::data_node *const node, int lvl) {
   // EMPTY
 }
-void mml::type_checker::do_double_node(cdk::double_node *const node, int lvl) {
-  // EMPTY
-}
-void mml::type_checker::do_not_node(cdk::not_node *const node, int lvl) {
-  // EMPTY
-}
-void mml::type_checker::do_and_node(cdk::and_node *const node, int lvl) {
-  // EMPTY
-}
-void mml::type_checker::do_or_node(cdk::or_node *const node, int lvl) {
-  // EMPTY
-}
 
 //---------------------------------------------------------------------------
 
@@ -43,6 +33,11 @@ void mml::type_checker::do_integer_node(cdk::integer_node *const node,
                                         int lvl) {
   ASSERT_UNSPEC;
   node->type(cdk::primitive_type::create(4, cdk::TYPE_INT));
+}
+
+void mml::type_checker::do_double_node(cdk::double_node *const node, int lvl) {
+  ASSERT_UNSPEC;
+  node->type(cdk::primitive_type::create(8, cdk::TYPE_DOUBLE));
 }
 
 void mml::type_checker::do_string_node(cdk::string_node *const node, int lvl) {
@@ -63,6 +58,9 @@ void mml::type_checker::processUnaryExpression(
 }
 
 void mml::type_checker::do_neg_node(cdk::neg_node *const node, int lvl) {
+  processUnaryExpression(node, lvl);
+}
+void mml::type_checker::do_not_node(cdk::not_node *const node, int lvl) {
   processUnaryExpression(node, lvl);
 }
 
@@ -114,6 +112,12 @@ void mml::type_checker::do_ne_node(cdk::ne_node *const node, int lvl) {
   processBinaryExpression(node, lvl);
 }
 void mml::type_checker::do_eq_node(cdk::eq_node *const node, int lvl) {
+  processBinaryExpression(node, lvl);
+}
+void mml::type_checker::do_and_node(cdk::and_node *const node, int lvl) {
+  processBinaryExpression(node, lvl);
+}
+void mml::type_checker::do_or_node(cdk::or_node *const node, int lvl) {
   processBinaryExpression(node, lvl);
 }
 
@@ -176,8 +180,7 @@ void mml::type_checker::do_evaluation_node(mml::evaluation_node *const node,
 }
 
 void mml::type_checker::do_print_node(mml::print_node *const node, int lvl) {
-  // FIXME: only works in the next delivery
-  // node->argument()->accept(this, lvl + 2);
+  node->arguments()->accept(this, lvl + 2);
 }
 
 //---------------------------------------------------------------------------
@@ -292,7 +295,8 @@ void mml::type_checker::do_function_call_node(
 
 void mml::type_checker::do_function_definition_node(
     mml::function_definition_node *const node, int lvl) {
-  // FIXME: currently empty in order to compile, isn't required for the first
-  // delivery
+  ASSERT_UNSPEC;
+
+  auto function = mml::create_symbol(node->type(), 0, tPRIVATE);
 }
 
