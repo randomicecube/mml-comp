@@ -20,6 +20,28 @@ std::string get_qualifier(int qualifier) {
   return "unknown"; // should never happen
 }
 
+// the characters <, >, and & are special in XML -- as such, we replace them
+// with XML entities
+std::string xml_escaped(const std::string &raw) {
+  std::string escaped;
+  for (char c : raw) {
+    switch (c) {
+    case '<':
+      escaped += "&lt;";
+      break;
+    case '>':
+      escaped += "&gt;";
+      break;
+    case '&':
+      escaped += "&amp;";
+      break;
+    default:
+      escaped += c;
+    }
+  }
+  return escaped;
+}
+
 //---------------------------------------------------------------------------
 
 void mml::xml_writer::do_nil_node(cdk::nil_node *const node, int lvl) {
@@ -256,7 +278,7 @@ void mml::xml_writer::do_declaration_node(mml::declaration_node *const node,
   // until the type checker is properly implemented
   os() << std::string(lvl, ' ') << "<" << node->label() << " qualifier='"
        << qualifier << "' identifier='" << node->identifier() << "' type='"
-       << cdk::to_string(node->type()) << "'>" << std::endl;
+       << xml_escaped(cdk::to_string(node->type())) << "'>" << std::endl;
 
   if (node->init()) {
     openTag("init", lvl + 2);
@@ -364,7 +386,7 @@ void mml::xml_writer::do_function_definition_node(
     mml::function_definition_node *const node, int lvl) {
   // ASSERT_SAFE_EXPRESSIONS;
   os() << std::string(lvl, ' ') << "<" << node->label() << " type='"
-       << cdk::to_string(node->type()) << "' main='" << std::noboolalpha
+       << xml_escaped(cdk::to_string(node->type())) << "' main='" << std::noboolalpha
        << node->main() << std::boolalpha << "'>" << std::endl;
   if (node->arguments()) {
     openTag("arguments", lvl + 2);
