@@ -11,6 +11,23 @@
       return;                                                                  \
   }
 
+static bool compatible_ptr_types(std::shared_ptr<cdk::basic_type> t1,
+                                 std::shared_ptr<cdk::basic_type> t2) {
+  auto t1_ptr = t1;
+  auto t2_ptr = t2;
+  while (t1_ptr->name() == cdk::TYPE_POINTER && t2_ptr != nullptr && t2_ptr->name() == cdk::TYPE_POINTER) {
+    t1_ptr = cdk::reference_type::cast(t1_ptr)->referenced();
+    t2_ptr = cdk::reference_type::cast(t2_ptr)->referenced();
+  }
+  return t2_ptr == nullptr || t1_ptr->name() == t2_ptr->name();
+}
+
+static bool compatible_fun_types(std::shared_ptr<cdk::functional_type> t1,
+                                 std::shared_ptr<cdk::functional_type> t2) {
+  // TODO: do this
+  return true;
+}
+
 //---------------------------------------------------------------------------
 // NOTE: these methods were adapted from the provided type_checker.cpp, in OG
 
@@ -302,8 +319,74 @@ void mml::type_checker::do_if_else_node(mml::if_else_node *const node,
 }
 
 void mml::type_checker::do_return_node(mml::return_node *const node, int lvl) {
-  // FIXME: currently empty in order to compile, isn't required for the first
-  // delivery
+  auto function = _symtab.find("@", 1);
+  if (!function) { // a return function may only be inside a function
+    throw std::string("return statement found outside function");
+  }
+
+  auto main = _symtab.find("_main", 0);
+  if (main) {
+    if (!node->retval())
+      throw std::string("wrong type of return value in main (integer expected)");
+    node->retval()->accept(this, lvl + 2);
+    if (!node->retval()->is_typed(cdk::TYPE_INT))
+      throw std::string("wrong type of return value in main (integer expected)");
+    return;
+  }
+
+  if (!node->retval()) {
+    if (!function->is_typed(cdk::TYPE_VOID))
+      throw std::string("missing return value in non-void function");
+    return;
+  }
+
+  const auto &fun_type = cdk::functional_type::cast(function->type());
+  const auto output = fun_type->output();
+  const bool has_output = fun_type->output() != nullptr;
+  if (has_output && fun_type->output(0)->name() == cdk::TYPE_VOID)
+    throw std::string("return with a value in void function");
+
+  node->retval()->accept(this, lvl + 2);
+  if (!has_output)
+    throw std::string("unknown return type in function");
+
+  const auto type_name = fun_type->output(0)->name();
+  switch (type_name) {
+  case cdk::TYPE_INT:
+    if (!node->retval()->is_typed(cdk::TYPE_INT))
+      throw std::string("wrong type of return value in function (integer expected)");
+    break;
+  case cdk::TYPE_DOUBLE:
+    if (!(node->retval()->is_typed(cdk::TYPE_DOUBLE) || node->retval()->is_typed(cdk::TYPE_INT)))
+      throw std::string("wrong type of return value in function (integer or double expected)");
+    break;
+  case cdk::TYPE_STRING:
+    if (!node->retval()->is_typed(cdk::TYPE_STRING))
+      throw std::string("wrong type of return value in function (string expected)");
+    break;
+  case cdk::TYPE_POINTER:
+    if (node->retval()->is_typed(cdk::TYPE_POINTER) && !compatible_ptr_types(output, node->retval()->type()))
+      throw std::string("wrong type of return value in function (pointer expected)");
+    break;
+  case cdk::TYPE_FUNCTIONAL:
+    if (
+      (
+        node->retval()->is_typed(cdk::TYPE_FUNCTIONAL) &&
+        !compatible_fun_types(
+          cdk::functional_type::cast(output),
+          cdk::functional_type::cast(node->retval()->type())
+        )
+      ) ||
+      (
+        node->retval()->is_typed(cdk::TYPE_POINTER) &&
+        cdk::reference_type::cast(node->retval()->type())->referenced() == nullptr
+      )
+    )
+      throw std::string("wrong type of return value in function (functional expected)");
+    break;
+  default:
+    throw std::string("unknown return type in function");
+  }
 }
 
 //---------------------------------------------------------------------------
