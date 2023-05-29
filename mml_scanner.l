@@ -97,7 +97,7 @@ static std::ostringstream strlit;
 <X_BACKSLASH>n         strlit << '\n'; yy_pop_state();
 <X_BACKSLASH>r         strlit << '\r'; yy_pop_state();
 <X_BACKSLASH>t         strlit << '\t'; yy_pop_state();
-<X_BACKSLASH>\"        strlit << '"'; yy_pop_state();
+<X_BACKSLASH>\"        strlit << '\"'; yy_pop_state();
 <X_BACKSLASH>\\        strlit << '\\'; yy_pop_state();
 <X_BACKSLASH>0         yy_push_state(X_STRING_SKIP);
 <X_BACKSLASH>[0-7]{1,3}   {
