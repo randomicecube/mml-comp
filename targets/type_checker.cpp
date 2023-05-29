@@ -442,9 +442,9 @@ void mml::type_checker::do_function_definition_node(
     mml::function_definition_node *const node, int lvl) {
   if (node->main()) {
     const auto fun_int_type = cdk::functional_type::create(cdk::primitive_type::create(4, cdk::TYPE_INT));
-    auto main = mml::make_symbol(fun_int_type, "_main", 0, tPRIVATE);
+    const auto main = mml::make_symbol(fun_int_type, "_main", 0, tPRIVATE);
     main->set_main();
-    auto main_at = mml::make_symbol(fun_int_type, "@", 0, tPRIVATE);
+    const auto main_at = mml::make_symbol(fun_int_type, "@", 0, tPRIVATE);
     main_at->set_main();
     // FIXME: supposedly this doesn't work well, needs to be looked at
     _symtab.replace_local(main_at->name(), main);
@@ -452,7 +452,7 @@ void mml::type_checker::do_function_definition_node(
     return;
   }
 
-  auto function = mml::make_symbol(node->type(), "@", 0, tPRIVATE);
+  const auto function = mml::make_symbol(node->type(), "@", 0, tPRIVATE);
   // FIXME: supposedly this doesn't work well, needs to be looked at
   _symtab.replace_local(function->name(), function);
   _parent->set_new_symbol(function);
