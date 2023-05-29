@@ -11,8 +11,8 @@
       return;                                                                  \
   }
 
-static bool compatible_ptr_types(std::shared_ptr<cdk::basic_type> t1,
-                                 std::shared_ptr<cdk::basic_type> t2) {
+bool mml::type_checker::compatible_ptr_types(std::shared_ptr<cdk::basic_type> t1,
+                          std::shared_ptr<cdk::basic_type> t2) {
   auto t1_ptr = t1;
   auto t2_ptr = t2;
   while (t1_ptr->name() == cdk::TYPE_POINTER && t2_ptr != nullptr &&
@@ -23,34 +23,61 @@ static bool compatible_ptr_types(std::shared_ptr<cdk::basic_type> t1,
   return t2_ptr == nullptr || t1_ptr->name() == t2_ptr->name();
 }
 
-static bool compatible_fun_types(std::shared_ptr<cdk::functional_type> t1,
-                                 std::shared_ptr<cdk::functional_type> t2) {
-  const auto t1_output = t1->output(0);
-  const auto t2_output = t2->output(0);
-  const auto t1_output_name = t1_output->name();
-  const auto t2_output_name = t2_output->name();
-  const auto fun_t1_output = cdk::functional_type::cast(t1_output);
-  const auto fun_t2_output = cdk::functional_type::cast(t2_output);
+bool mml::type_checker::compatible_fun_types(std::shared_ptr<cdk::functional_type> t1,
+                          std::shared_ptr<cdk::functional_type> t2) {
+  // the return type must be compatible
+  if (!compatible_types(t1->output(0), t2->output(0)))
+    return false;
 
-  switch (t1_output_name) {
-  case cdk::TYPE_POINTER:
-    if (!(t2_output_name == cdk::TYPE_POINTER && compatible_ptr_types(t1_output, t2_output)))
+  // the number of arguments must be the same
+  if (t1->input_length() != t2->input_length())
+    return false;
+
+  // the types of the arguments must be compatible
+  for (size_t i = 0; i < t1->input_length(); i++)
+    if (!compatible_types(t1->input(i), t2->input(i)))
       return false;
-    break;
-  case cdk::TYPE_FUNCTIONAL:
-    if (!(t2_output_name == cdk::TYPE_FUNCTIONAL && compatible_fun_types(fun_t1_output, fun_t2_output)))
+  return true;
+}
+
+bool mml::type_checker::compatible_types(std::shared_ptr<cdk::basic_type> t1,
+                      std::shared_ptr<cdk::basic_type> t2) {
+  const auto t1_name = t1->name();
+  const auto t2_name = t2->name();
+  const auto fun_t1 = cdk::functional_type::cast(t1);
+  const auto fun_t2 = cdk::functional_type::cast(t2);
+
+  switch (t1_name) {
+  case cdk::TYPE_INT:
+    if (t2_name != cdk::TYPE_INT)
       return false;
     break;
   case cdk::TYPE_DOUBLE:
-    if (!(t2_output_name == cdk::TYPE_DOUBLE || t2_output_name == cdk::TYPE_INT))
+    if (!(t2_name == cdk::TYPE_DOUBLE || t2_name == cdk::TYPE_INT))
       return false;
     break;
+  case cdk::TYPE_STRING:
+    if (t2_name != cdk::TYPE_STRING)
+      return false;
+    break;
+  case cdk::TYPE_POINTER:
+    if (!(t2_name == cdk::TYPE_POINTER && compatible_ptr_types(t1, t2)))
+      return false;
+    break;
+  case cdk::TYPE_FUNCTIONAL:
+    if (!(t2_name == cdk::TYPE_FUNCTIONAL &&
+          compatible_fun_types(fun_t1, fun_t2)))
+      return false;
+    break;
+  default:
+    if (t1_name != t2_name)
+      return false;
   }
   return true;
 }
 
 // check whether two nodes have compatible types
-void compatible_node_types(std::shared_ptr<cdk::basic_type> t_node,
+void mml::type_checker::compatible_node_types(std::shared_ptr<cdk::basic_type> t_node,
                            std::shared_ptr<cdk::basic_type> t_field,
                            cdk::typename_type tname_node,
                            cdk::typename_type tname_field,

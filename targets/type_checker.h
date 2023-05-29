@@ -23,6 +23,17 @@ public:
   ~type_checker() { os().flush(); }
 
 protected:
+  bool compatible_ptr_types(std::shared_ptr<cdk::basic_type> t1,
+                                   std::shared_ptr<cdk::basic_type> t2);
+  bool compatible_fun_types(std::shared_ptr<cdk::functional_type> t1,
+                                   std::shared_ptr<cdk::functional_type> t2);
+  bool compatible_types(std::shared_ptr<cdk::basic_type> t1,
+                               std::shared_ptr<cdk::basic_type> t2);
+  void compatible_node_types(std::shared_ptr<cdk::basic_type> t_node,
+                             std::shared_ptr<cdk::basic_type> t_field,
+                             cdk::typename_type tname_node,
+                             cdk::typename_type tname_field,
+                             std::string field_name);
   void processIBinaryExpression(cdk::binary_operation_node *const node,
                                 int lvl);
   void processIDBinaryExpression(cdk::binary_operation_node *const node,
