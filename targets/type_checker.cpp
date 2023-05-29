@@ -409,7 +409,7 @@ void mml::type_checker::do_function_call_node(
     args_types = cdk::functional_type::cast(type)->input()->components();
     node->type(cdk::functional_type::cast(type)->output(0));
   } else { // recursive call (@)
-    auto symbol = _symtab.find_local("@");
+    auto symbol = _symtab.find_local("@", 1);
     if (!symbol)
       throw std::string("recursive call to undeclared function");
     else if (symbol->is_main())
