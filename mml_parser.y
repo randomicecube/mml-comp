@@ -54,7 +54,7 @@
 %type <node> conditional_instruction instruction else arg 
 
 %type <s> string
-%type <type> fun_type data_type void_type fun_pointer data_pointer void_pointer opt_auto auto return_type var_type
+%type <type> fun_type data_type void_type void_pointer opt_auto auto return_type var_type
 %type <types> var_types
 
 /* Associativity rules */
@@ -67,7 +67,7 @@
 %nonassoc '~'
 %left tNE tEQ
 %left '<' tLE tGE '>'
-%left '+' '-' '?'
+%left '+' '-'
 %left '*' '/' '%'
 %nonassoc tUNARY
 %nonassoc '(' '['
@@ -118,28 +118,19 @@ var_types : var_type                              { $$ = new std::vector<std::sh
            ;
 
 var_type : data_type                              { $$ = $1; }
-          | data_pointer                          { $$ = $1; }
-          | fun_type                              { $$ = $1; }
-          | fun_pointer                           { $$ = $1; }
           | void_pointer                          { $$ = $1; }
           ;
 
 data_type : tSTRING_TYPE                          { $$ = cdk::primitive_type::create(4, cdk::TYPE_STRING); }
           | tINT_TYPE                             { $$ = cdk::primitive_type::create(4, cdk::TYPE_INT); }
           | tDOUBLE_TYPE                          { $$ = cdk::primitive_type::create(8, cdk::TYPE_DOUBLE); }
+          | fun_type                              { $$ = $1; }
+          | '[' data_type ']'                     { $$ = cdk::reference_type::create(4, $2); }
           ;
-
-data_pointer : '[' data_pointer ']'               { $$ = cdk::reference_type::create(4, $2); }
-             | '[' data_type ']'                  { $$ = cdk::reference_type::create(4, $2); }
-             ;
 
 fun_type : return_type '<' var_types '>'          { $$ = cdk::functional_type::create(*$3, $1); delete $3; }
          | return_type '<'            '>'         { $$ = cdk::functional_type::create($1); }
          ;
-
-fun_pointer : '[' fun_pointer ']'                 { $$ = cdk::reference_type::create(4, $2); }
-            | '[' fun_type ']'                    { $$ = cdk::reference_type::create(4, $2); }
-            ;
 
 void_type : tVOID_TYPE                            { $$ = cdk::primitive_type::create(4, cdk::TYPE_VOID); }
           ;
