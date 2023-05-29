@@ -114,7 +114,9 @@ static std::ostringstream strlit;
                           }
 <X_BACKSLASH>.         strlit << *yytext; yy_pop_state();
 
-<X_STRING_SKIP>\\\"        ;
+<X_STRING_SKIP>\\\"|\\\\   ;
+<X_STRING_SKIP>\0          yyerror("NULL byte in string");
+<X_STRING_SKIP>\n          yyerror("Newline in string");
 <X_STRING_SKIP>\"          {
                               yylval.s = new std::string(strlit.str());
                               strlit.str("");
