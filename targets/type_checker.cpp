@@ -397,8 +397,43 @@ void mml::type_checker::do_address_of_node(mml::address_of_node *const node,
 
 void mml::type_checker::do_function_call_node(
     mml::function_call_node *const node, int lvl) {
-  // FIXME: currently empty in order to compile, isn't required for the first
-  // delivery
+  ASSERT_UNSPEC;
+  std::vector<std::shared_ptr<cdk::basic_type>> args_types;
+  
+  if (node->function()) { // regular call
+    node->function()->accept(this, lvl + 2);
+    if (!(node->function()->is_typed(cdk::TYPE_FUNCTIONAL)))
+      throw std::string("wrong type in function call expression");
+
+    const auto &type = node->function()->type();
+    args_types = cdk::functional_type::cast(type)->input()->components();
+    node->type(cdk::functional_type::cast(type)->output(0));
+  } else { // recursive call (@)
+    auto symbol = _symtab.find_local("@");
+    if (!symbol)
+      throw std::string("recursive call to undeclared function");
+    else if (symbol->is_main())
+      throw std::string("recursive call in main function");
+    
+    const auto &type = symbol->type();
+    args_types = cdk::functional_type::cast(type)->input()->components();
+    node->type(cdk::functional_type::cast(type)->output(0));
+  }
+
+  if (args_types.size() != node->arguments()->size())
+    throw std::string("wrong number of arguments in function call expression");
+
+  node->arguments()->accept(this, lvl + 2);
+  for (size_t i = 0; i < args_types.size(); i++) {
+    const auto &param_type = dynamic_cast<cdk::expression_node *>(node->arguments()->node(i))->type();
+    // note that the second condition is to allow passing an int as a double
+    if (
+      (args_types[i] == param_type) ||
+      (args_types[i]->name() == cdk::TYPE_DOUBLE && param_type->name() == cdk::TYPE_INT)
+    )
+      continue;
+    throw std::string("wrong type in argument of function call expression");
+  }
 }
 
 //---------------------------------------------------------------------------
