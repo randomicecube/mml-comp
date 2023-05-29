@@ -405,5 +405,5 @@ void mml::type_checker::do_function_call_node(
 
 void mml::type_checker::do_function_definition_node(
     mml::function_definition_node *const node, int lvl) {
-  ASSERT_UNSPEC;
+  // if it's main
 }
