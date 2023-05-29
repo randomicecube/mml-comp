@@ -23,12 +23,33 @@ public:
   ~type_checker() { os().flush(); }
 
 protected:
-  void processIBinaryExpression(cdk::binary_operation_node *const node, int lvl);
-  void processIDBinaryExpression(cdk::binary_operation_node *const node, int lvl);
-  void processIDPBinaryExpression(cdk::binary_operation_node *const node, int lvl);
-  void processScalarLogicalBinaryExpression(cdk::binary_operation_node *const node, int lvl);
-  void processBooleanLogicalBinaryExpression(cdk::binary_operation_node *const node, int lvl);
-  void processGeneralLogicalBinaryExpression(cdk::binary_operation_node *const node, int lvl);
+  static bool
+  mml::type_checker::compatible_ptr_types(std::shared_ptr<cdk::basic_type> t1,
+                                          std::shared_ptr<cdk::basic_type> t2);
+  static bool mml::type_checker::compatible_fun_types(
+      std::shared_ptr<cdk::functional_type> t1,
+      std::shared_ptr<cdk::functional_type> t2);
+  void processIBinaryExpression(cdk::binary_operation_node *const node,
+                                int lvl);
+  void processIDBinaryExpression(cdk::binary_operation_node *const node,
+                                 int lvl);
+  void processIDPBinaryExpression(cdk::binary_operation_node *const node,
+                                  int lvl);
+  void
+  processScalarLogicalBinaryExpression(cdk::binary_operation_node *const node,
+                                       int lvl);
+  void
+  processBooleanLogicalBinaryExpression(cdk::binary_operation_node *const node,
+                                        int lvl);
+  void
+  processGeneralLogicalBinaryExpression(cdk::binary_operation_node *const node,
+                                        int lvl);
+  void compatibleNodeFieldTypes(std::shared_ptr<cdk::basic_type> t_node,
+                                std::shared_ptr<cdk::basic_type> t_field,
+                                cdk::typename_type tname_node,
+                                cdk::typename_type tname_field,
+                                std::string field_name);
+
   template <typename T>
   void process_literal(cdk::literal_node<T> *const node, int lvl) {}
 

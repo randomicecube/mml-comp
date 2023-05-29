@@ -11,21 +11,63 @@
       return;                                                                  \
   }
 
-static bool compatible_ptr_types(std::shared_ptr<cdk::basic_type> t1,
-                                 std::shared_ptr<cdk::basic_type> t2) {
+bool mml::type_checker::compatible_ptr_types(
+    std::shared_ptr<cdk::basic_type> t1, std::shared_ptr<cdk::basic_type> t2) {
   auto t1_ptr = t1;
   auto t2_ptr = t2;
-  while (t1_ptr->name() == cdk::TYPE_POINTER && t2_ptr != nullptr && t2_ptr->name() == cdk::TYPE_POINTER) {
+  while (t1_ptr->name() == cdk::TYPE_POINTER && t2_ptr != nullptr &&
+         t2_ptr->name() == cdk::TYPE_POINTER) {
     t1_ptr = cdk::reference_type::cast(t1_ptr)->referenced();
     t2_ptr = cdk::reference_type::cast(t2_ptr)->referenced();
   }
   return t2_ptr == nullptr || t1_ptr->name() == t2_ptr->name();
 }
 
-static bool compatible_fun_types(std::shared_ptr<cdk::functional_type> t1,
-                                 std::shared_ptr<cdk::functional_type> t2) {
+bool mml::type_checker::compatible_fun_types(
+    std::shared_ptr<cdk::functional_type> t1,
+    std::shared_ptr<cdk::functional_type> t2) {
   // TODO: do this
   return true;
+}
+
+// check whether a node and one of its fields (passed as an argument) are
+// typed in a compatible way
+void mml::type_checker::compatibleNodeFieldTypes(
+    std::shared_ptr<cdk::basic_type> t_node,
+    std::shared_ptr<cdk::basic_type> t_field, cdk::typename_type tname_node,
+    cdk::typename_type tname_field, std::string field_name) {
+  const auto fun_t_node = cdk::functional_type::cast(t_node);
+  const auto fun_t_field = cdk::functional_type::cast(t_field);
+  const auto ref_t_field = cdk::reference_type::cast(t_field)->referenced();
+
+  switch (tname_node) {
+  case cdk::TYPE_INT:
+    if (tname_field != cdk::TYPE_INT)
+      throw std::string("wrong type in " + field_name + " (expected int)");
+    break;
+  case cdk::TYPE_DOUBLE:
+    if (!(tname_field == cdk::TYPE_INT || tname_field == cdk::TYPE_DOUBLE))
+      throw std::string("wrong type in " + field_name +
+                        " (expected double or int)");
+    break;
+  case cdk::TYPE_STRING:
+    if (tname_field != cdk::TYPE_STRING)
+      throw std::string("wrong type in " + field_name + " (expected string)");
+    break;
+  case cdk::TYPE_POINTER:
+    if (tname_field == cdk::TYPE_POINTER &&
+        !compatible_ptr_types(t_node, t_field))
+      throw std::string("wrong type in " + field_name + " (expected pointer)");
+    break;
+  case cdk::TYPE_FUNCTIONAL:
+    if ((tname_field == cdk::TYPE_FUNCTIONAL &&
+         !compatible_fun_types(fun_t_node, fun_t_field)) ||
+        (tname_field == cdk::TYPE_POINTER && ref_t_field == nullptr))
+      throw std::string("wrong type in " + field_name + " (expected function)");
+    break;
+  default:
+    throw std::string("unknown type in " + field_name);
+  }
 }
 
 //---------------------------------------------------------------------------
@@ -146,15 +188,12 @@ void mml::type_checker::do_nil_node(cdk::nil_node *const node, int lvl) {
 void mml::type_checker::do_data_node(cdk::data_node *const node, int lvl) {
   // EMPTY
 }
-
 void mml::type_checker::do_stop_node(mml::stop_node *const node, int lvl) {
   // EMPTY
 }
-
 void mml::type_checker::do_next_node(mml::next_node *const node, int lvl) {
   // EMPTY
 }
-
 void mml::type_checker::do_block_node(mml::block_node *const node, int lvl) {
   // EMPTY
 }
@@ -297,75 +336,48 @@ void mml::type_checker::do_if_else_node(mml::if_else_node *const node,
   node->condition()->accept(this, lvl + 4);
 }
 
+// FIXME: I'm not proud of the variable names here
 void mml::type_checker::do_return_node(mml::return_node *const node, int lvl) {
-  auto function = _symtab.find("@", 1);
-  if (!function) { // a return function may only be inside a function
+  const auto symbol = _symtab.find("@", 1);
+  if (!symbol) { // a return may only be inside a function
     throw std::string("return statement found outside function");
   }
 
-  auto main = _symtab.find("_main", 0);
+  const auto main = _symtab.find("_main", 0);
+  const auto ret_val = node->retval();
   if (main) {
-    if (!node->retval())
-      throw std::string("wrong type of return value in main (integer expected)");
-    node->retval()->accept(this, lvl + 2);
-    if (!node->retval()->is_typed(cdk::TYPE_INT))
-      throw std::string("wrong type of return value in main (integer expected)");
+    if (!ret_val)
+      throw std::string(
+          "wrong type of return value in main (integer expected)");
+    ret_val->accept(this, lvl + 2);
+    if (!ret_val->is_typed(cdk::TYPE_INT))
+      throw std::string(
+          "wrong type of return value in main (integer expected)");
     return;
   }
 
-  if (!node->retval()) {
-    if (!function->is_typed(cdk::TYPE_VOID))
+  if (!ret_val) {
+    if (!symbol->is_typed(cdk::TYPE_VOID))
       throw std::string("missing return value in non-void function");
     return;
   }
 
-  const auto &fun_type = cdk::functional_type::cast(function->type());
-  const auto output = fun_type->output();
-  const bool has_output = fun_type->output() != nullptr;
-  if (has_output && fun_type->output(0)->name() == cdk::TYPE_VOID)
+  const auto &fun_sym_type = cdk::functional_type::cast(symbol->type());
+  const auto output = fun_sym_type->output();
+  const bool has_output = output != nullptr;
+  if (has_output && fun_sym_type->output(0)->name() == cdk::TYPE_VOID)
     throw std::string("return with a value in void function");
 
-  node->retval()->accept(this, lvl + 2);
+  ret_val->accept(this, lvl + 2);
   if (!has_output)
     throw std::string("unknown return type in function");
 
-  const auto type_name = fun_type->output(0)->name();
-  switch (type_name) {
-  case cdk::TYPE_INT:
-    if (!node->retval()->is_typed(cdk::TYPE_INT))
-      throw std::string("wrong type of return value in function (integer expected)");
-    break;
-  case cdk::TYPE_DOUBLE:
-    if (!(node->retval()->is_typed(cdk::TYPE_DOUBLE) || node->retval()->is_typed(cdk::TYPE_INT)))
-      throw std::string("wrong type of return value in function (integer or double expected)");
-    break;
-  case cdk::TYPE_STRING:
-    if (!node->retval()->is_typed(cdk::TYPE_STRING))
-      throw std::string("wrong type of return value in function (string expected)");
-    break;
-  case cdk::TYPE_POINTER:
-    if (node->retval()->is_typed(cdk::TYPE_POINTER) && !compatible_ptr_types(output, node->retval()->type()))
-      throw std::string("wrong type of return value in function (pointer expected)");
-    break;
-  case cdk::TYPE_FUNCTIONAL:
-    if (
-      (
-        node->retval()->is_typed(cdk::TYPE_FUNCTIONAL) &&
-        !compatible_fun_types(
-          cdk::functional_type::cast(output),
-          cdk::functional_type::cast(node->retval()->type())
-        )
-      ) ||
-      (
-        node->retval()->is_typed(cdk::TYPE_POINTER) &&
-        cdk::reference_type::cast(node->retval()->type())->referenced() == nullptr
-      )
-    )
-      throw std::string("wrong type of return value in function (functional expected)");
-    break;
-  default:
-    throw std::string("unknown return type in function");
-  }
+  const auto type_name = fun_sym_type->output(0)->name();
+  const auto node_type = ret_val->type();
+  const auto node_type_name = ret_val->type()->name();
+
+  compatibleNodeFieldTypes(output, node_type, type_name, node_type_name,
+                           "return value");
 }
 
 //---------------------------------------------------------------------------
@@ -382,8 +394,14 @@ void mml::type_checker::do_nullptr_node(mml::nullptr_node *const node,
 
 void mml::type_checker::do_declaration_node(mml::declaration_node *const node,
                                             int lvl) {
-  // FIXME: currently empty in order to compile, isn't required for the first
-  // delivery
+  const auto &init = node->init();
+  if (init) {
+    init->accept(this, lvl + 2);
+    const auto &type_name = node->type()->name();
+    const auto &init_type_name = init->type()->name();
+    compatibleNodeFieldTypes(node->type(), init->type(), type_name,
+                             init_type_name, "initializer");
+  }
 }
 
 //---------------------------------------------------------------------------
@@ -396,8 +414,6 @@ void mml::type_checker::do_input_node(mml::input_node *const node, int lvl) {
 
 //---------------------------------------------------------------------------
 
-// note that it can't be processed as a "regular" unary expression,
-// as it may not only be an integer, but also a real
 void mml::type_checker::do_identity_node(mml::identity_node *const node,
                                          int lvl) {
   ASSERT_UNSPEC;
@@ -460,7 +476,7 @@ void mml::type_checker::do_function_call_node(
     mml::function_call_node *const node, int lvl) {
   ASSERT_UNSPEC;
   std::vector<std::shared_ptr<cdk::basic_type>> args_types;
-  
+
   if (node->function()) { // regular call
     node->function()->accept(this, lvl + 2);
     if (!(node->function()->is_typed(cdk::TYPE_FUNCTIONAL)))
@@ -470,12 +486,13 @@ void mml::type_checker::do_function_call_node(
     args_types = cdk::functional_type::cast(type)->input()->components();
     node->type(cdk::functional_type::cast(type)->output(0));
   } else { // recursive call (@)
-    auto symbol = _symtab.find("@", 1); // looks at one level above for the symbol
+    auto symbol =
+        _symtab.find("@", 1); // looks at one level above for the symbol
     if (!symbol)
       throw std::string("recursive call to undeclared function");
     else if (symbol->is_main())
       throw std::string("recursive call in main function");
-    
+
     const auto &type = symbol->type();
     args_types = cdk::functional_type::cast(type)->input()->components();
     node->type(cdk::functional_type::cast(type)->output(0));
@@ -486,12 +503,13 @@ void mml::type_checker::do_function_call_node(
 
   node->arguments()->accept(this, lvl + 2);
   for (size_t i = 0; i < args_types.size(); i++) {
-    const auto &param_type = dynamic_cast<cdk::expression_node *>(node->arguments()->node(i))->type();
+    const auto &param_type =
+        dynamic_cast<cdk::expression_node *>(node->arguments()->node(i))
+            ->type();
     // note that the second condition is to allow passing an int as a double
-    if (
-      (args_types[i] == param_type) ||
-      (args_types[i]->name() == cdk::TYPE_DOUBLE && param_type->name() == cdk::TYPE_INT)
-    )
+    if ((args_types[i] == param_type) ||
+        (args_types[i]->name() == cdk::TYPE_DOUBLE &&
+         param_type->name() == cdk::TYPE_INT))
       continue;
     throw std::string("wrong type in argument of function call expression");
   }
@@ -499,11 +517,11 @@ void mml::type_checker::do_function_call_node(
 
 //---------------------------------------------------------------------------
 
-// FIXME: this doesn't look right
 void mml::type_checker::do_function_definition_node(
     mml::function_definition_node *const node, int lvl) {
   if (node->main()) {
-    const auto fun_int_type = cdk::functional_type::create(cdk::primitive_type::create(4, cdk::TYPE_INT));
+    const auto fun_int_type = cdk::functional_type::create(
+        cdk::primitive_type::create(4, cdk::TYPE_INT));
     const auto main = mml::make_symbol(fun_int_type, "_main", 0, tPRIVATE);
     main->set_main();
     const auto main_at = mml::make_symbol(fun_int_type, "@", 0, tPRIVATE);
