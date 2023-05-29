@@ -159,7 +159,8 @@ void mml::type_checker::do_string_node(cdk::string_node *const node, int lvl) {
 void mml::type_checker::do_neg_node(cdk::neg_node *const node, int lvl) {
   ASSERT_UNSPEC;
   node->argument()->accept(this, lvl + 2);
-  if (!(node->argument()->is_typed(cdk::TYPE_INT) || node->argument()->is_typed(cdk::TYPE_DOUBLE))) {
+  if (!(node->argument()->is_typed(cdk::TYPE_INT) ||
+        node->argument()->is_typed(cdk::TYPE_DOUBLE))) {
     throw std::string("wrong type in argument of negation expression");
   }
   node->type(node->argument()->type());
