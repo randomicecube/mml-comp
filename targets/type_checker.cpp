@@ -266,28 +266,7 @@ void mml::type_checker::do_rvalue_node(cdk::rvalue_node *const node, int lvl) {
 
 void mml::type_checker::do_assignment_node(cdk::assignment_node *const node,
                                            int lvl) {
-  ASSERT_UNSPEC;
-
-  try {
-    node->lvalue()->accept(this, lvl);
-  } catch (const std::string &id) {
-    auto symbol = std::make_shared<mml::symbol>(
-        cdk::primitive_type::create(4, cdk::TYPE_INT), id, 0);
-    _symtab.insert(id, symbol);
-    _parent->set_new_symbol(
-        symbol); // advise parent that a symbol has been inserted
-    node->lvalue()->accept(this, lvl); // DAVID: bah!
-  }
-
-  if (!node->lvalue()->is_typed(cdk::TYPE_INT))
-    throw std::string("wrong type in left argument of assignment expression");
-
-  node->rvalue()->accept(this, lvl + 2);
-  if (!node->rvalue()->is_typed(cdk::TYPE_INT))
-    throw std::string("wrong type in right argument of assignment expression");
-
-  // in MML, expressions are always int
-  node->type(cdk::primitive_type::create(4, cdk::TYPE_INT));
+  // TODO: this
 }
 
 //---------------------------------------------------------------------------
@@ -529,14 +508,22 @@ void mml::type_checker::do_function_definition_node(
     main->set_main();
     const auto main_at = mml::make_symbol(fun_int_type, "@", 0, tPRIVATE);
     main_at->set_main();
-    // FIXME: supposedly this doesn't work well, needs to be looked at
-    _symtab.replace_local(main_at->name(), main);
+    // TODO: code does not compile with replace_local :(
+    if (_symtab.find_local(main_at->name())) {
+      _symtab.replace(main_at->name(), main);
+    } else {
+      _symtab.insert(main_at->name(), main);
+    }
     _parent->set_new_symbol(main);
     return;
   }
 
   const auto function = mml::make_symbol(node->type(), "@", 0, tPRIVATE);
-  // FIXME: supposedly this doesn't work well, needs to be looked at
-  _symtab.replace_local(function->name(), function);
+  // TODO: code does not compile with replace_local :(
+  if (_symtab.find_local(function->name())) {
+    _symtab.replace(function->name(), function);
+  } else {
+    _symtab.insert(function->name(), function);
+  }
   _parent->set_new_symbol(function);
 }
