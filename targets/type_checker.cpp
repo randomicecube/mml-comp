@@ -29,6 +29,7 @@ void mml::type_checker::processIBinaryExpression(
   node->type(cdk::primitive_type::create(4, cdk::TYPE_INT));
 }
 
+// FIXME: this is ugly, stolen from OG
 void mml::type_checker::processIDBinaryExpression(
     cdk::binary_operation_node *const node, int lvl) {
   ASSERT_UNSPEC;
@@ -57,6 +58,7 @@ void mml::type_checker::processIDBinaryExpression(
   }
 }
 
+// FIXME: this is ugly, stolen from OG
 void mml::type_checker::processIDPBinaryExpression(
     cdk::binary_operation_node *const node, int lvl) {
   ASSERT_UNSPEC;
