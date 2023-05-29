@@ -23,7 +23,6 @@ public:
   ~type_checker() { os().flush(); }
 
 protected:
-  void processUnaryExpression(cdk::unary_operation_node *const node, int lvl);
   void processIBinaryExpression(cdk::binary_operation_node *const node, int lvl);
   void processIDBinaryExpression(cdk::binary_operation_node *const node, int lvl);
   void processIDPBinaryExpression(cdk::binary_operation_node *const node, int lvl);

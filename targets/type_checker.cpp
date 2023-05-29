@@ -14,16 +14,6 @@
 //---------------------------------------------------------------------------
 // NOTE: these methods were adapted from the provided type_checker.cpp, in OG
 
-void mml::type_checker::processUnaryExpression(
-    cdk::unary_operation_node *const node, int lvl) {
-  node->argument()->accept(this, lvl + 2);
-  if (!node->argument()->is_typed(cdk::TYPE_INT))
-    throw std::string("wrong type in argument of unary expression");
-
-  // in MML, expressions are always int
-  node->type(cdk::primitive_type::create(4, cdk::TYPE_INT));
-}
-
 void mml::type_checker::processIBinaryExpression(
     cdk::binary_operation_node *const node, int lvl) {
   ASSERT_UNSPEC;
@@ -129,7 +119,7 @@ void mml::type_checker::do_sequence_node(cdk::sequence_node *const node,
     n->accept(this, lvl);
 }
 
-//--------------------------PURPOSEFULLY EMPTY----------------------------------
+//--------------------------PURPOSEFULLY EMPTY-------------------------------
 
 void mml::type_checker::do_nil_node(cdk::nil_node *const node, int lvl) {
   // EMPTY
@@ -167,10 +157,20 @@ void mml::type_checker::do_string_node(cdk::string_node *const node, int lvl) {
 //---------------------------------------------------------------------------
 
 void mml::type_checker::do_neg_node(cdk::neg_node *const node, int lvl) {
-  processUnaryExpression(node, lvl);
+  ASSERT_UNSPEC;
+  node->argument()->accept(this, lvl + 2);
+  if (!(node->argument()->is_typed(cdk::TYPE_INT) || node->argument()->is_typed(cdk::TYPE_DOUBLE))) {
+    throw std::string("wrong type in argument of negation expression");
+  }
+  node->type(node->argument()->type());
 }
 void mml::type_checker::do_not_node(cdk::not_node *const node, int lvl) {
-  processUnaryExpression(node, lvl);
+  ASSERT_UNSPEC;
+  node->argument()->accept(this, lvl + 2);
+  if (!node->argument()->is_typed(cdk::TYPE_INT)) {
+    throw std::string("wrong type in argument of not expression");
+  }
+  node->type(node->argument()->type());
 }
 
 //---------------------------------------------------------------------------
