@@ -81,9 +81,9 @@ static std::ostringstream strlit;
   /* ====[              3.8.3 - Cadeias de caracteres                 ]==== */
   /* ====================================================================== */
 
-"\""                   yy_push_state(X_STRING);
-<X_STRING>\\           yy_push_state(X_BACKSLASH);
-<X_STRING>"\""        {
+\"                    yy_push_state(X_STRING);
+<X_STRING>\\          yy_push_state(X_BACKSLASH);
+<X_STRING>\"          {
                         yylval.s = new std::string(strlit.str());
                         strlit.str("");
                         yy_pop_state();
@@ -114,7 +114,8 @@ static std::ostringstream strlit;
                           }
 <X_BACKSLASH>.         strlit << *yytext; yy_pop_state();
 
-<X_STRING_SKIP>"\""        {
+<X_STRING_SKIP>\\\"        ;
+<X_STRING_SKIP>\"          {
                               yylval.s = new std::string(strlit.str());
                               strlit.str("");
                               yy_pop_state(); yy_pop_state(); yy_pop_state(); /* X_STRING_SKIP, X_BACKSLASH, X_STRING */
