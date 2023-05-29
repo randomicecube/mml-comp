@@ -30,9 +30,8 @@ bool mml::type_checker::compatible_fun_types(
   return true;
 }
 
-// check whether a node and one of its fields (passed as an argument) are
-// typed in a compatible way
-void mml::type_checker::compatibleNodeFieldTypes(
+// check whether two nodes have compatible types
+void mml::type_checker::compatible_node_types(
     std::shared_ptr<cdk::basic_type> t_node,
     std::shared_ptr<cdk::basic_type> t_field, cdk::typename_type tname_node,
     cdk::typename_type tname_field, std::string field_name) {
@@ -305,7 +304,100 @@ void mml::type_checker::do_rvalue_node(cdk::rvalue_node *const node, int lvl) {
 
 void mml::type_checker::do_assignment_node(cdk::assignment_node *const node,
                                            int lvl) {
-  // TODO: this
+  ASSERT_UNSPEC;
+  node->lvalue()->accept(this, lvl + 2);
+  node->rvalue()->accept(this, lvl + 2);
+
+  const auto lval_type = node->lvalue()->type();
+  const auto rval_type = node->rvalue()->type();
+  const auto lval_type_name = lval_type->name();
+  const auto rval_type_name = rval_type->name();
+
+  const auto fun_lval_type = cdk::functional_type::cast(lval_type);
+  const auto fun_rval_type = cdk::functional_type::cast(rval_type);
+
+  const auto int_type = cdk::primitive_type::create(4, cdk::TYPE_INT);
+  const auto double_type = cdk::primitive_type::create(8, cdk::TYPE_DOUBLE);
+  const auto string_type = cdk::primitive_type::create(4, cdk::TYPE_STRING);
+  const auto error_type = cdk::primitive_type::create(0, cdk::TYPE_ERROR);
+
+  switch (lval_type_name) {
+    case cdk::TYPE_INT:
+      switch (rval_type_name) {
+        case cdk::TYPE_INT:
+          node->type(int_type);
+          return;
+        case cdk::TYPE_UNSPEC:
+          node->type(int_type);
+          node->rvalue()->type(int_type);
+          return;
+        default:
+          throw std::string("wrong assignment to integer");
+      }
+      break;
+    case cdk::TYPE_DOUBLE:
+      switch (rval_type_name) {
+        case cdk::TYPE_INT:
+        case cdk::TYPE_DOUBLE:
+          node->type(double_type);
+          return;
+        case cdk::TYPE_UNSPEC:
+          node->type(double_type);
+          node->rvalue()->type(double_type);
+          return;
+        default:
+          throw std::string("wrong assignment to double");
+      }
+      break;
+    case cdk::TYPE_STRING:
+      switch (rval_type_name) {
+        case cdk::TYPE_STRING:
+          node->type(string_type);
+          return;
+        case cdk::TYPE_UNSPEC:
+          node->type(string_type);
+          node->rvalue()->type(string_type);
+          return;
+        default:
+          throw std::string("wrong assignment to string");
+      }
+      break;
+    case cdk::TYPE_POINTER:
+      switch (rval_type_name) {
+        case cdk::TYPE_POINTER:
+          if (!compatible_ptr_types(lval_type, rval_type))
+            throw std::string("wrong assignment to pointer");
+          node->type(rval_type);
+          return;
+        case cdk::TYPE_UNSPEC:
+          node->type(error_type);
+          node->rvalue()->type(error_type);
+          return;
+        default:
+          throw std::string("wrong assignment to pointer");
+      }
+    case cdk::TYPE_FUNCTIONAL:
+      switch (rval_type_name) {
+        case cdk::TYPE_FUNCTIONAL:
+          if (!compatible_fun_types(fun_lval_type, fun_rval_type))
+            throw std::string("wrong assignment to functional");
+          node->type(rval_type);
+          return;
+        case cdk::TYPE_POINTER:
+          if (cdk::reference_type::cast(rval_type)->referenced() == nullptr)
+            throw std::string("wrong assignment to functional");
+          node->type(rval_type);
+          return;
+        case cdk::TYPE_UNSPEC:
+          node->type(error_type);
+          node->rvalue()->type(error_type);
+          return;
+        default:
+          throw std::string("wrong assignment to functional");
+      }
+    default:
+      throw std::string("wrong types in assignment");
+  }
 }
 
 //---------------------------------------------------------------------------
@@ -376,7 +468,7 @@ void mml::type_checker::do_return_node(mml::return_node *const node, int lvl) {
   const auto node_type = ret_val->type();
   const auto node_type_name = ret_val->type()->name();
 
-  compatibleNodeFieldTypes(output, node_type, type_name, node_type_name,
+  compatible_node_types(output, node_type, type_name, node_type_name,
                            "return value");
 }
 
@@ -399,7 +491,7 @@ void mml::type_checker::do_declaration_node(mml::declaration_node *const node,
     init->accept(this, lvl + 2);
     const auto &type_name = node->type()->name();
     const auto &init_type_name = init->type()->name();
-    compatibleNodeFieldTypes(node->type(), init->type(), type_name,
+    compatible_node_types(node->type(), init->type(), type_name,
                              init_type_name, "initializer");
   }
 }
