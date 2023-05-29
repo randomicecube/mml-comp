@@ -59,7 +59,7 @@ static std::ostringstream strlit;
 
 0[0-7]+                 { /* octal */
                           try {
-                            yylval.i = std::stoul(yytext, NULL, 8);
+                            yylval.i = std::stoi(yytext, NULL, 8);
                             return tINTEGER;
                           } catch (const std::out_of_range &e) {
                             yyerror("out of range integer");
@@ -70,7 +70,7 @@ static std::ostringstream strlit;
 
 0|[1-9][0-9]*           { /* decimal */
                           try {
-                            yylval.i = std::stoul(yytext);
+                            yylval.i = std::stoi(yytext);
                             return tINTEGER;
                           } catch (const std::out_of_range &e) {
                             yyerror("out of range integer");
@@ -102,7 +102,7 @@ static std::ostringstream strlit;
 <X_BACKSLASH>0         yy_push_state(X_STRING_SKIP);
 <X_BACKSLASH>[0-7]{1,3}   {
                             try {
-                              const int c = std::stoul(yytext, NULL, 8);
+                              const int c = std::stoi(yytext, NULL, 8);
                               if (c > 255) {
                                 yyerror("octal escape sequence out of range");
                               }
