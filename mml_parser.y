@@ -129,7 +129,7 @@ data_type : tSTRING_TYPE                          { $$ = cdk::primitive_type::cr
           | tDOUBLE_TYPE                          { $$ = cdk::primitive_type::create(8, cdk::TYPE_DOUBLE); }
           ;
 
-data_pointer : '[' data_pointer ']'               { $$ = $2; } 
+data_pointer : '[' data_pointer ']'               { $$ = cdk::reference_type::create(4, $2); }
              | '[' data_type ']'                  { $$ = cdk::reference_type::create(4, $2); }
              ;
 
@@ -137,7 +137,7 @@ fun_type : return_type '<' var_types '>'          { $$ = cdk::functional_type::c
          | return_type '<'            '>'         { $$ = cdk::functional_type::create($1); }
          ;
 
-fun_pointer : '[' fun_pointer ']'                 { $$ = $2; } 
+fun_pointer : '[' fun_pointer ']'                 { $$ = cdk::reference_type::create(4, $2); }
             | '[' fun_type ']'                    { $$ = cdk::reference_type::create(4, $2); }
             ;
 
