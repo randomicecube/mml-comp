@@ -136,6 +136,10 @@ void mml::type_checker::do_next_node(mml::next_node *const node, int lvl) {
   // EMPTY
 }
 
+void mml::type_checker::do_block_node(mml::block_node *const node, int lvl) {
+  // EMPTY
+}
+
 //---------------------------------------------------------------------------
 
 void mml::type_checker::do_integer_node(cdk::integer_node *const node,
@@ -320,13 +324,6 @@ void mml::type_checker::do_declaration_node(mml::declaration_node *const node,
 
 //---------------------------------------------------------------------------
 
-void mml::type_checker::do_block_node(mml::block_node *const node, int lvl) {
-  // FIXME: currently empty in order to compile, isn't required for the first
-  // delivery
-}
-
-//---------------------------------------------------------------------------
-
 void mml::type_checker::do_input_node(mml::input_node *const node, int lvl) {
   ASSERT_UNSPEC;
   // TODO: check if this is correct;; in MML, expressions are always int
@@ -438,7 +435,11 @@ void mml::type_checker::do_function_call_node(
 
 //---------------------------------------------------------------------------
 
+// FIXME: this doesn't look right
 void mml::type_checker::do_function_definition_node(
     mml::function_definition_node *const node, int lvl) {
-  // if it's main
+  auto function = mml::make_symbol(node->type(), "@", 0, tPRIVATE);
+  // FIXME: supposedly this doesn't work well, needs to be looked at
+  _symtab.replace_local(function->name(), function);
+  _parent->set_new_symbol(function);
 }
