@@ -6,7 +6,6 @@
 #include <cdk/emitters/basic_postfix_emitter.h>
 #include <sstream>
 #include <set>
-#include <stack>
 
 typedef int lbl;
 
@@ -28,7 +27,7 @@ class postfix_writer : public basic_ast_visitor {
   bool _inFunctionBody = false;
   bool _inFunctionArgs = false;
   bool _returnSeen = false; // when building a function
-  std::stack<lbl> _whileCond, _whileEnd; // while labels -- for break/continue
+  std::vector<lbl> _whileCond, _whileEnd; // while labels -- for break/continue
 
   // remember function name for resolving '@'
   std::string _currentFunctionName;

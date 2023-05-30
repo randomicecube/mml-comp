@@ -238,32 +238,37 @@ void mml::postfix_writer::do_variable_node(cdk::variable_node *const node,
   _pf.ADDR(node->name());
 }
 
-// TODO
 void mml::postfix_writer::do_rvalue_node(cdk::rvalue_node *const node,
                                          int lvl) {
   ASSERT_SAFE_EXPRESSIONS;
   node->lvalue()->accept(this, lvl);
-  _pf.LDINT(); // depends on type size
+  if (node->type()->name() == cdk::TYPE_DOUBLE) {
+    _pf.LDDOUBLE();
+  } else {
+    // integers, pointers, and strings
+    // FIXME: may need forward check here
+    _pf.LDINT();
+  }
 }
 
-// TODO
 void mml::postfix_writer::do_assignment_node(cdk::assignment_node *const node,
                                              int lvl) {
   ASSERT_SAFE_EXPRESSIONS;
-  node->rvalue()->accept(this, lvl); // determine the new value
-  _pf.DUP32();
-  if (new_symbol() == nullptr) {
-    node->lvalue()->accept(this, lvl); // where to store the value
+  node->rvalue()->accept(this, lvl + 2);
+  if (node->type()->name() == cdk::TYPE_DOUBLE) {
+    if (node->rvalue()->type()->name() == cdk::TYPE_INT)
+      _pf.I2D();
+    _pf.DUP64();
   } else {
-    _pf.DATA();  // variables are all global and live in DATA
-    _pf.ALIGN(); // make sure we are aligned
-    _pf.LABEL(new_symbol()->name()); // name variable location
-    reset_new_symbol();
-    _pf.SINT(0);                       // initialize it to 0 (zero)
-    _pf.TEXT();                        // return to the TEXT segment
-    node->lvalue()->accept(this, lvl); // DAVID: bah!
+    _pf.DUP32();
   }
-  _pf.STINT(); // store the value at address
+
+  node->lvalue()->accept(this, lvl + 2);
+  if (node->type()->name() == cdk::TYPE_DOUBLE)
+    _pf.STDOUBLE();
+  else
+    _pf.STINT();
+
 }
 
 //---------------------------------------------------------------------------
@@ -310,8 +315,8 @@ void mml::postfix_writer::do_while_node(mml::while_node *const node, int lvl) {
   ASSERT_SAFE_EXPRESSIONS;
   int whileCondLbl = ++_lbl;
   int whileEndLbl = ++_lbl;
-  _whileCond.push(whileCondLbl); // the (currently) deepest while condition label
-  _whileEnd.push(whileEndLbl);   // the (currently) deepest while end label
+  _whileCond.push_back(whileCondLbl); // the (currently) deepest while condition label
+  _whileEnd.push_back(whileEndLbl);   // the (currently) deepest while end label
 
   _symtab.push(); // entering new context, new symbol table for block-local vars
 
@@ -326,8 +331,8 @@ void mml::postfix_writer::do_while_node(mml::while_node *const node, int lvl) {
   _pf.LABEL(mklbl(whileEndLbl)); // setting label for the end of the cycle
   
   _symtab.pop(); // leaving current context
-  _whileCond.pop(); // leaving current while condition label
-  _whileEnd.pop(); // leaving current while end label
+  _whileCond.pop_back(); // leaving current while condition label
+  _whileEnd.pop_back(); // leaving current while end label
 }
 
 //---------------------------------------------------------------------------
@@ -358,18 +363,42 @@ void mml::postfix_writer::do_if_else_node(mml::if_else_node *const node,
 
 //---------------------------------------------------------------------------
 
-// TODO
 void mml::postfix_writer::do_stop_node(mml::stop_node *const node, int lvl) {
-  // FIXME: currently empty in order to compile, isn't required for the first
-  // delivery
+  if (_whileCond.size() == 0) {
+    error(node->lineno(), "stop node found outside a while block");
+    return;
+  }
+  const size_t stopLvl = (size_t) node->level();
+
+  // if stopLvl equals 1, we go to the topmost while end label.
+  // otherwise, we go to the stopLvl-th while end label
+  // we also need to check if the stopLvl-th while end label even exists
+  if (stopLvl > _whileEnd.size() || stopLvl < 1) {
+    error(node->lineno(), "invalid stop level");
+    return;
+  }
+  const auto whileEndLbl = _whileEnd[stopLvl - 1];
+  _pf.JMP(mklbl(whileEndLbl));
 }
 
 //---------------------------------------------------------------------------
 
-// TODO
 void mml::postfix_writer::do_next_node(mml::next_node *const node, int lvl) {
-  // FIXME: currently empty in order to compile, isn't required for the first
-  // delivery
+  if (_whileCond.size() == 0) {
+    error(node->lineno(), "next node found outside a while block");
+    return;
+  }
+  const size_t nextLvl = (size_t) node->level();
+
+  // if nextLvl equals 1, we go to the topmost while condition label.
+  // otherwise, we go to the nextLvl-th while condition label
+  // we also need to check if the nextLvl-th while condition label even exists
+  if (nextLvl > _whileCond.size() || nextLvl < 1) {
+    error(node->lineno(), "invalid next level");
+    return;
+  }
+  const auto whileCondLbl = _whileCond[nextLvl - 1];
+  _pf.JMP(mklbl(whileCondLbl));
 }
 
 //---------------------------------------------------------------------------
