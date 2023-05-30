@@ -48,14 +48,16 @@ void mml::postfix_writer::do_string_node(cdk::string_node *const node,
 
 //---------------------------------------------------------------------------
 
-// TODO: these two
 void mml::postfix_writer::do_neg_node(cdk::neg_node *const node, int lvl) {
   ASSERT_SAFE_EXPRESSIONS;
-  node->argument()->accept(this, lvl); // determine the value
-  _pf.NEG();                           // 2-complement
+  node->argument()->accept(this, lvl + 2); // determine the value
+  _pf.NEG();                               // 2-complement
 }
 void mml::postfix_writer::do_not_node(cdk::not_node *const node, int lvl) {
-  // EMPTY
+  ASSERT_SAFE_EXPRESSIONS;
+  node->argument()->accept(this, lvl + 2); // the value we want to compare
+  _pf.INT(0); // we want to compare it to false
+  _pf.EQ(); // checks whether the last two values on the stack are equal
 }
 
 //---------------------------------------------------------------------------
