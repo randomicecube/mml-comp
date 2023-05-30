@@ -2,6 +2,7 @@
 #define __MML_TARGETS_TYPE_CHECKER_H__
 
 #include "targets/basic_ast_visitor.h"
+#include ".auto/all_nodes.h" // automatically generated
 
 namespace mml {
 
