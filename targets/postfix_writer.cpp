@@ -18,11 +18,10 @@ void mml::postfix_writer::do_data_node(cdk::data_node *const node, int lvl) {
 
 void mml::postfix_writer::do_integer_node(cdk::integer_node *const node,
                                           int lvl) {
-  if (_inFunctionBody) {
+  if (_inFunctionBody)
     _pf.INT(node->value());
-  } else {
+  else
     _pf.SINT(node->value());
-  }
 }
 // TODO
 void mml::postfix_writer::do_double_node(cdk::double_node *const node,
@@ -381,11 +380,13 @@ void mml::postfix_writer::do_input_node(mml::input_node *const node, int lvl) {
 
 //---------------------------------------------------------------------------
 
-// TODO
 void mml::postfix_writer::do_sizeof_node(mml::sizeof_node *const node,
                                          int lvl) {
-  // FIXME: currently empty in order to compile, isn't required for the first
-  // delivery
+  ASSERT_SAFE_EXPRESSIONS;
+  if (_inFunctionBody)
+    _pf.INT(node->argument()->type()->size());
+  else
+    _pf.SINT(node->argument()->type()->size());
 }
 
 //---------------------------------------------------------------------------
