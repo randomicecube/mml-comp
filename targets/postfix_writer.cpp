@@ -1,10 +1,11 @@
 #include "targets/postfix_writer.h"
 #include ".auto/all_nodes.h" // all_nodes.h is automatically generated
 #include "targets/type_checker.h"
+#include "targets/frame_size_calculator.h"
 #include <sstream>
 #include <string>
 
-//---------------------------------------------------------------------------
+//-------------------------PURPOSEFULLY EMPTY--------------------------------
 
 void mml::postfix_writer::do_nil_node(cdk::nil_node *const node, int lvl) {
   // EMPTY
@@ -12,38 +13,26 @@ void mml::postfix_writer::do_nil_node(cdk::nil_node *const node, int lvl) {
 void mml::postfix_writer::do_data_node(cdk::data_node *const node, int lvl) {
   // EMPTY
 }
-void mml::postfix_writer::do_double_node(cdk::double_node *const node,
-                                         int lvl) {
-  // EMPTY
-}
-void mml::postfix_writer::do_not_node(cdk::not_node *const node, int lvl) {
-  // EMPTY
-}
-void mml::postfix_writer::do_and_node(cdk::and_node *const node, int lvl) {
-  // EMPTY
-}
-void mml::postfix_writer::do_or_node(cdk::or_node *const node, int lvl) {
-  // EMPTY
-}
-
-//---------------------------------------------------------------------------
-
-void mml::postfix_writer::do_sequence_node(cdk::sequence_node *const node,
-                                           int lvl) {
-  for (size_t i = 0; i < node->size(); i++) {
-    node->node(i)->accept(this, lvl);
-  }
-}
 
 //---------------------------------------------------------------------------
 
 void mml::postfix_writer::do_integer_node(cdk::integer_node *const node,
                                           int lvl) {
-  _pf.INT(node->value()); // push an integer
+  if (_inFunctionBody) {
+    _pf.INT(node->value());
+  } else {
+    _pf.SINT(node->value());
+  }
+}
+
+void mml::postfix_writer::do_double_node(cdk::double_node *const node,
+                                         int lvl) {
+  // TODO
 }
 
 void mml::postfix_writer::do_string_node(cdk::string_node *const node,
                                          int lvl) {
+  // TODO
   int lbl1;
 
   /* generate the string */
@@ -59,37 +48,116 @@ void mml::postfix_writer::do_string_node(cdk::string_node *const node,
 
 //---------------------------------------------------------------------------
 
+// TODO: these two
 void mml::postfix_writer::do_neg_node(cdk::neg_node *const node, int lvl) {
   ASSERT_SAFE_EXPRESSIONS;
   node->argument()->accept(this, lvl); // determine the value
   _pf.NEG();                           // 2-complement
 }
+void mml::postfix_writer::do_not_node(cdk::not_node *const node, int lvl) {
+  // EMPTY
+}
 
 //---------------------------------------------------------------------------
 
-void mml::postfix_writer::do_add_node(cdk::add_node *const node, int lvl) {
+void mml::postfix_writer::do_and_node(cdk::and_node *const node, int lvl) {
   ASSERT_SAFE_EXPRESSIONS;
-  node->left()->accept(this, lvl);
-  node->right()->accept(this, lvl);
-  _pf.ADD();
+  const auto lbl = mklbl(++_lbl);
+  node->left()->accept(this, lvl + 2);
+  _pf.DUP32();
+  _pf.JZ(lbl);
+  node->right()->accept(this, lvl + 2);
+  _pf.AND();
+  _pf.ALIGN();
+  _pf.LABEL(lbl);
+}
+void mml::postfix_writer::do_or_node(cdk::or_node *const node, int lvl) {
+  ASSERT_SAFE_EXPRESSIONS;
+  const auto lbl = mklbl(++_lbl);
+  node->left()->accept(this, lvl + 2);
+  _pf.DUP32();
+  _pf.JNZ(lbl);
+  node->right()->accept(this, lvl + 2);
+  _pf.OR();
+  _pf.ALIGN();
+  _pf.LABEL(lbl);
+}
+
+//---------------------------------------------------------------------------
+
+void mml::postfix_writer::do_sequence_node(cdk::sequence_node *const node,
+                                           int lvl) {
+  for (size_t i = 0; i < node->size(); i++) {
+    node->node(i)->accept(this, lvl);
+  }
+}
+
+//---------------------------------------------------------------------------
+
+void mml::postfix_writer::processIDPBinaryExpression(cdk::binary_operation_node *const node, int lvl) {
+  ASSERT_SAFE_EXPRESSIONS;
+  node->left()->accept(this, lvl + 2);
+  const auto ref_left = cdk::reference_type::cast(node->left()->type())->referenced();
+  if (node->is_typed(cdk::TYPE_DOUBLE) && node->left()->is_typed(cdk::TYPE_INT))
+    _pf.I2D();
+  else if (node->is_typed(cdk::TYPE_POINTER) && node->left()->is_typed(cdk::TYPE_INT)) {
+    _pf.INT(ref_left->size());
+    _pf.MUL();
+  }
+
+  node->right()->accept(this, lvl + 2);
+  const auto ref_right = cdk::reference_type::cast(node->right()->type())->referenced();
+  if (node->is_typed(cdk::TYPE_DOUBLE) && node->right()->is_typed(cdk::TYPE_INT))
+    _pf.I2D();
+  else if (node->is_typed(cdk::TYPE_POINTER) && node->right()->is_typed(cdk::TYPE_INT)) {
+    _pf.INT(ref_right->size());
+    _pf.MUL();
+  }
+}
+void mml::postfix_writer::do_add_node(cdk::add_node *const node, int lvl) {
+  processIDPBinaryExpression(node, lvl);
+
+  if (node->is_typed(cdk::TYPE_DOUBLE))
+    _pf.DADD();
+  else
+    _pf.ADD();
 }
 void mml::postfix_writer::do_sub_node(cdk::sub_node *const node, int lvl) {
+  processIDPBinaryExpression(node, lvl);
+
+  if (node->is_typed(cdk::TYPE_DOUBLE))
+    _pf.DSUB();
+  else
+    _pf.SUB();
+}
+
+//---------------------------------------------------------------------------
+
+void mml::postfix_writer::processIDBinaryExpression(cdk::binary_operation_node *const node, int lvl) {
   ASSERT_SAFE_EXPRESSIONS;
-  node->left()->accept(this, lvl);
-  node->right()->accept(this, lvl);
-  _pf.SUB();
+  node->left()->accept(this, lvl + 2);
+  if (node->is_typed(cdk::TYPE_DOUBLE) && node->left()->is_typed(cdk::TYPE_INT))
+    _pf.I2D();
+
+  node->right()->accept(this, lvl + 2);
+  if (node->is_typed(cdk::TYPE_DOUBLE) && node->right()->is_typed(cdk::TYPE_INT))
+    _pf.I2D();
 }
 void mml::postfix_writer::do_mul_node(cdk::mul_node *const node, int lvl) {
-  ASSERT_SAFE_EXPRESSIONS;
-  node->left()->accept(this, lvl);
-  node->right()->accept(this, lvl);
-  _pf.MUL();
+  processIDBinaryExpression(node, lvl);
+
+  if (node->is_typed(cdk::TYPE_DOUBLE))
+    _pf.DMUL();
+  else
+    _pf.MUL();
 }
 void mml::postfix_writer::do_div_node(cdk::div_node *const node, int lvl) {
-  ASSERT_SAFE_EXPRESSIONS;
-  node->left()->accept(this, lvl);
-  node->right()->accept(this, lvl);
-  _pf.DIV();
+  processIDBinaryExpression(node, lvl);
+
+  if (node->is_typed(cdk::TYPE_DOUBLE))
+    _pf.DDIV();
+  else
+    _pf.DIV();
 }
 void mml::postfix_writer::do_mod_node(cdk::mod_node *const node, int lvl) {
   ASSERT_SAFE_EXPRESSIONS;
@@ -97,44 +165,46 @@ void mml::postfix_writer::do_mod_node(cdk::mod_node *const node, int lvl) {
   node->right()->accept(this, lvl);
   _pf.MOD();
 }
-void mml::postfix_writer::do_lt_node(cdk::lt_node *const node, int lvl) {
+
+//---------------------------------------------------------------------------
+
+void mml::postfix_writer::processGeneralLogicalBinaryExpression(cdk::binary_operation_node *const node, int lvl) {
   ASSERT_SAFE_EXPRESSIONS;
-  node->left()->accept(this, lvl);
-  node->right()->accept(this, lvl);
+  node->left()->accept(this, lvl + 2);
+  if (node->left()->is_typed(cdk::TYPE_INT) && node->right()->is_typed(cdk::TYPE_DOUBLE))
+    _pf.I2D();
+  
+  node->right()->accept(this, lvl + 2);
+  if (node->right()->is_typed(cdk::TYPE_INT) && node->left()->is_typed(cdk::TYPE_DOUBLE))
+    _pf.I2D();
+}
+void mml::postfix_writer::do_lt_node(cdk::lt_node *const node, int lvl) {
+  processGeneralLogicalBinaryExpression(node, lvl);
   _pf.LT();
 }
 void mml::postfix_writer::do_le_node(cdk::le_node *const node, int lvl) {
-  ASSERT_SAFE_EXPRESSIONS;
-  node->left()->accept(this, lvl);
-  node->right()->accept(this, lvl);
+  processGeneralLogicalBinaryExpression(node, lvl);
   _pf.LE();
 }
 void mml::postfix_writer::do_ge_node(cdk::ge_node *const node, int lvl) {
-  ASSERT_SAFE_EXPRESSIONS;
-  node->left()->accept(this, lvl);
-  node->right()->accept(this, lvl);
+  processGeneralLogicalBinaryExpression(node, lvl);
   _pf.GE();
 }
 void mml::postfix_writer::do_gt_node(cdk::gt_node *const node, int lvl) {
-  ASSERT_SAFE_EXPRESSIONS;
-  node->left()->accept(this, lvl);
-  node->right()->accept(this, lvl);
+  processGeneralLogicalBinaryExpression(node, lvl);
   _pf.GT();
 }
 void mml::postfix_writer::do_ne_node(cdk::ne_node *const node, int lvl) {
-  ASSERT_SAFE_EXPRESSIONS;
-  node->left()->accept(this, lvl);
-  node->right()->accept(this, lvl);
+  processGeneralLogicalBinaryExpression(node, lvl);
   _pf.NE();
 }
 void mml::postfix_writer::do_eq_node(cdk::eq_node *const node, int lvl) {
-  ASSERT_SAFE_EXPRESSIONS;
-  node->left()->accept(this, lvl);
-  node->right()->accept(this, lvl);
+  processGeneralLogicalBinaryExpression(node, lvl);
   _pf.EQ();
 }
 
 //---------------------------------------------------------------------------
+// TODO: all below
 
 void mml::postfix_writer::do_variable_node(cdk::variable_node *const node,
                                            int lvl) {
