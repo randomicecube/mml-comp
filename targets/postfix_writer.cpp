@@ -48,11 +48,10 @@ void mml::postfix_writer::do_nullptr_node(mml::nullptr_node *const node,
   ASSERT_SAFE_EXPRESSIONS;
   // we'll always want to put a 0 in the stack, what matters is whether it's
   // static or not
-  if (_inFunctionBody) {
+  if (_inFunctionBody)
     _pf.INT(0);
-  } else {
+  else
     _pf.SINT(0);
-  }
 }
 
 //---------------------------------------------------------------------------
