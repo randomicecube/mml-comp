@@ -402,20 +402,22 @@ void mml::postfix_writer::do_index_node(mml::index_node *const node, int lvl) {
 
 //---------------------------------------------------------------------------
 
-// TODO
 void mml::postfix_writer::do_stack_alloc_node(mml::stack_alloc_node *const node,
                                               int lvl) {
-  // FIXME: currently empty in order to compile, isn't required for the first
-  // delivery
+  const auto ref = cdk::reference_type::cast(node->type())->referenced();
+  node->argument()->accept(this, lvl);
+  _pf.INT(ref->size()); // type size
+  _pf.MUL();            // type size * argument
+  _pf.ALLOC();          // allocate space for the array
+  _pf.SP();             // pushes the array's address
 }
 
 //---------------------------------------------------------------------------
 
-// TODO
 void mml::postfix_writer::do_address_of_node(mml::address_of_node *const node,
                                              int lvl) {
-  // FIXME: currently empty in order to compile, isn't required for the first
-  // delivery
+  ASSERT_SAFE_EXPRESSIONS;
+  node->lvalue()->accept(this, lvl + 2);
 }
 
 //---------------------------------------------------------------------------
