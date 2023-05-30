@@ -261,19 +261,11 @@ void mml::postfix_writer::do_assignment_node(cdk::assignment_node *const node,
 
 //---------------------------------------------------------------------------
 
-// TODO
 void mml::postfix_writer::do_evaluation_node(mml::evaluation_node *const node,
                                              int lvl) {
   ASSERT_SAFE_EXPRESSIONS;
-  node->argument()->accept(this, lvl); // determine the value
-  if (node->argument()->is_typed(cdk::TYPE_INT)) {
-    _pf.TRASH(4); // delete the evaluated value
-  } else if (node->argument()->is_typed(cdk::TYPE_STRING)) {
-    _pf.TRASH(4); // delete the evaluated value's address
-  } else {
-    std::cerr << "ERROR: CANNOT HAPPEN!" << std::endl;
-    exit(1);
-  }
+  node->argument()->accept(this, lvl + 2); // determine the value
+  _pf.TRASH(node->argument()->type()->size()); // delete it
 }
 
 // TODO
@@ -370,10 +362,13 @@ void mml::postfix_writer::do_declaration_node(mml::declaration_node *const node,
 
 //---------------------------------------------------------------------------
 
-// TODO
 void mml::postfix_writer::do_block_node(mml::block_node *const node, int lvl) {
-  // FIXME: currently empty in order to compile, isn't required for the first
-  // delivery
+  _symtab.push(); // entering new context, new symbol table for block-local vars
+  if (node->declarations())
+    node->declarations()->accept(this, lvl + 2);
+  if (node->instructions())
+    node->instructions()->accept(this, lvl + 2);
+  _symtab.pop(); // leaving current context
 }
 
 //---------------------------------------------------------------------------
