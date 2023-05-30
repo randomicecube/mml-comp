@@ -6,6 +6,7 @@
 #include <cdk/emitters/basic_postfix_emitter.h>
 #include <sstream>
 #include <set>
+#include <stack>
 
 typedef int lbl;
 

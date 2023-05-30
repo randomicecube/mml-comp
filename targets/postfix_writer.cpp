@@ -394,10 +394,22 @@ void mml::postfix_writer::do_block_node(mml::block_node *const node, int lvl) {
 
 //---------------------------------------------------------------------------
 
-// TODO
 void mml::postfix_writer::do_input_node(mml::input_node *const node, int lvl) {
-  // FIXME: currently empty in order to compile, isn't required for the first
-  // delivery
+  ASSERT_SAFE_EXPRESSIONS;
+  switch (node->type()->name()) {
+  case cdk::TYPE_INT:
+    _functionsToDeclare.insert("readi");
+    _pf.CALL("readi");
+    _pf.LDFVAL32();
+    break;
+  case cdk::TYPE_DOUBLE:
+    _functionsToDeclare.insert("readd");
+    _pf.CALL("readd");
+    _pf.LDFVAL64();
+    break;
+  default:
+    error(node->lineno(), "cannot read expression of unknown type");
+  }
 }
 
 //---------------------------------------------------------------------------
