@@ -628,9 +628,10 @@ void mml::type_checker::do_function_call_node(
         dynamic_cast<cdk::expression_node *>(node->arguments()->node(i))
             ->type();
     // note that the second condition is to allow passing an int as a double
-    if ((args_types[i] == param_type) ||
-        (args_types[i]->name() == cdk::TYPE_DOUBLE &&
-         param_type->name() == cdk::TYPE_INT))
+    if (
+      (args_types[i] == param_type) ||
+      (args_types[i]->name() == cdk::TYPE_DOUBLE && param_type->name() == cdk::TYPE_INT)
+    )
       continue;
     throw std::string("wrong type in argument of function call expression");
   }
