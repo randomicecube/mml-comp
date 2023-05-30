@@ -391,10 +391,13 @@ void mml::postfix_writer::do_sizeof_node(mml::sizeof_node *const node,
 
 //---------------------------------------------------------------------------
 
-// TODO
 void mml::postfix_writer::do_index_node(mml::index_node *const node, int lvl) {
-  // FIXME: currently empty in order to compile, isn't required for the first
-  // delivery
+  ASSERT_SAFE_EXPRESSIONS;
+  node->base()->accept(this, lvl);
+  node->index()->accept(this, lvl);
+  _pf.INT(node->type()->size()); // type size
+  _pf.MUL();                     // type size * index
+  _pf.ADD();                     // base + (type size * index)
 }
 
 //---------------------------------------------------------------------------
