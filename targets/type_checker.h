@@ -35,6 +35,7 @@ protected:
                              cdk::typename_type tname_node,
                              cdk::typename_type tname_field,
                              std::string field_name);
+  bool processBinaryExpression(cdk::binary_operation_node *const node, int lvl);
   void processIBinaryExpression(cdk::binary_operation_node *const node,
                                 int lvl);
   void processIDBinaryExpression(cdk::binary_operation_node *const node,
