@@ -266,22 +266,33 @@ void mml::postfix_writer::do_evaluation_node(mml::evaluation_node *const node,
   _pf.TRASH(node->argument()->type()->size()); // delete it
 }
 
-// TODO
 void mml::postfix_writer::do_print_node(mml::print_node *const node, int lvl) {
-  // FIXME: only works in the next delivery
-  /* ASSERT_SAFE_EXPRESSIONS;
-  node->argument()->accept(this, lvl); // determine the value to print
-  if (node->argument()->is_typed(cdk::TYPE_INT)) {
-    _pf.CALL("printi");
-    _pf.TRASH(4); // delete the printed value
-  } else if (node->argument()->is_typed(cdk::TYPE_STRING)) {
-    _pf.CALL("prints");
-    _pf.TRASH(4); // delete the printed value's address
-  } else {
-    std::cerr << "ERROR: CANNOT HAPPEN!" << std::endl;
-    exit(1);
+  ASSERT_SAFE_EXPRESSIONS;
+  for (size_t ix = 0; ix < node->arguments()->size(); ix++) {
+    const auto arg = dynamic_cast<cdk::expression_node *>(node->arguments()->node(ix));
+    arg->accept(this, lvl); // determine the value to print
+    if (arg->is_typed(cdk::TYPE_INT)) {
+      _functionsToDeclare.insert("printi");
+      _pf.CALL("printi");
+      _pf.TRASH(4); // trash int
+    }
+    else if (arg->is_typed(cdk::TYPE_DOUBLE)) {
+      _functionsToDeclare.insert("printd");
+      _pf.CALL("printd");
+      _pf.TRASH(8); // trash double
+    }
+    else if (arg->is_typed(cdk::TYPE_STRING)) {
+      _functionsToDeclare.insert("prints");
+      _pf.CALL("prints");
+      _pf.TRASH(4); // trash char pointer
+    }
+    else
+      error(node->lineno(), "cannot print expression of unknown type");
   }
-  _pf.CALL("println"); // print a newline */
+  if (node->newline()) {
+    _functionsToDeclare.insert("println");
+    _pf.CALL("println"); // print a newline
+  }
 }
 
 //---------------------------------------------------------------------------
