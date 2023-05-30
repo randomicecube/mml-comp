@@ -24,13 +24,14 @@ void mml::postfix_writer::do_integer_node(cdk::integer_node *const node,
     _pf.SINT(node->value());
   }
 }
+// TODO
 void mml::postfix_writer::do_double_node(cdk::double_node *const node,
                                          int lvl) {
-  // TODO
+  // EMPTY
 }
+// TODO
 void mml::postfix_writer::do_string_node(cdk::string_node *const node,
                                          int lvl) {
-  // TODO
   int lbl1;
 
   /* generate the string */
@@ -222,6 +223,7 @@ void mml::postfix_writer::do_eq_node(cdk::eq_node *const node, int lvl) {
 //---------------------------------------------------------------------------
 // TODO: all below
 
+// TODO
 void mml::postfix_writer::do_variable_node(cdk::variable_node *const node,
                                            int lvl) {
   ASSERT_SAFE_EXPRESSIONS;
@@ -229,6 +231,7 @@ void mml::postfix_writer::do_variable_node(cdk::variable_node *const node,
   _pf.ADDR(node->name());
 }
 
+// TODO
 void mml::postfix_writer::do_rvalue_node(cdk::rvalue_node *const node,
                                          int lvl) {
   ASSERT_SAFE_EXPRESSIONS;
@@ -236,6 +239,7 @@ void mml::postfix_writer::do_rvalue_node(cdk::rvalue_node *const node,
   _pf.LDINT(); // depends on type size
 }
 
+// TODO
 void mml::postfix_writer::do_assignment_node(cdk::assignment_node *const node,
                                              int lvl) {
   ASSERT_SAFE_EXPRESSIONS;
@@ -257,6 +261,7 @@ void mml::postfix_writer::do_assignment_node(cdk::assignment_node *const node,
 
 //---------------------------------------------------------------------------
 
+// TODO
 void mml::postfix_writer::do_evaluation_node(mml::evaluation_node *const node,
                                              int lvl) {
   ASSERT_SAFE_EXPRESSIONS;
@@ -271,6 +276,7 @@ void mml::postfix_writer::do_evaluation_node(mml::evaluation_node *const node,
   }
 }
 
+// TODO
 void mml::postfix_writer::do_print_node(mml::print_node *const node, int lvl) {
   // FIXME: only works in the next delivery
   /* ASSERT_SAFE_EXPRESSIONS;
@@ -290,6 +296,7 @@ void mml::postfix_writer::do_print_node(mml::print_node *const node, int lvl) {
 
 //---------------------------------------------------------------------------
 
+// TODO
 void mml::postfix_writer::do_while_node(mml::while_node *const node, int lvl) {
   ASSERT_SAFE_EXPRESSIONS;
   int lbl1, lbl2;
@@ -329,6 +336,7 @@ void mml::postfix_writer::do_if_else_node(mml::if_else_node *const node,
 
 //---------------------------------------------------------------------------
 
+// TODO
 void mml::postfix_writer::do_stop_node(mml::stop_node *const node, int lvl) {
   // FIXME: currently empty in order to compile, isn't required for the first
   // delivery
@@ -336,6 +344,7 @@ void mml::postfix_writer::do_stop_node(mml::stop_node *const node, int lvl) {
 
 //---------------------------------------------------------------------------
 
+// TODO
 void mml::postfix_writer::do_next_node(mml::next_node *const node, int lvl) {
   // FIXME: currently empty in order to compile, isn't required for the first
   // delivery
@@ -343,6 +352,7 @@ void mml::postfix_writer::do_next_node(mml::next_node *const node, int lvl) {
 
 //---------------------------------------------------------------------------
 
+// TODO
 void mml::postfix_writer::do_return_node(mml::return_node *const node,
                                          int lvl) {
   // FIXME: currently empty in order to compile, isn't required for the first
@@ -351,6 +361,7 @@ void mml::postfix_writer::do_return_node(mml::return_node *const node,
 
 //---------------------------------------------------------------------------
 
+// TODO
 void mml::postfix_writer::do_declaration_node(mml::declaration_node *const node,
                                               int lvl) {
   // FIXME: currently empty in order to compile, isn't required for the first
@@ -359,6 +370,7 @@ void mml::postfix_writer::do_declaration_node(mml::declaration_node *const node,
 
 //---------------------------------------------------------------------------
 
+// TODO
 void mml::postfix_writer::do_block_node(mml::block_node *const node, int lvl) {
   // FIXME: currently empty in order to compile, isn't required for the first
   // delivery
@@ -366,6 +378,7 @@ void mml::postfix_writer::do_block_node(mml::block_node *const node, int lvl) {
 
 //---------------------------------------------------------------------------
 
+// TODO
 void mml::postfix_writer::do_input_node(mml::input_node *const node, int lvl) {
   // FIXME: currently empty in order to compile, isn't required for the first
   // delivery
@@ -373,6 +386,7 @@ void mml::postfix_writer::do_input_node(mml::input_node *const node, int lvl) {
 
 //---------------------------------------------------------------------------
 
+// TODO
 void mml::postfix_writer::do_sizeof_node(mml::sizeof_node *const node,
                                          int lvl) {
   // FIXME: currently empty in order to compile, isn't required for the first
@@ -381,6 +395,7 @@ void mml::postfix_writer::do_sizeof_node(mml::sizeof_node *const node,
 
 //---------------------------------------------------------------------------
 
+// TODO
 void mml::postfix_writer::do_index_node(mml::index_node *const node, int lvl) {
   // FIXME: currently empty in order to compile, isn't required for the first
   // delivery
@@ -388,6 +403,7 @@ void mml::postfix_writer::do_index_node(mml::index_node *const node, int lvl) {
 
 //---------------------------------------------------------------------------
 
+// TODO
 void mml::postfix_writer::do_stack_alloc_node(mml::stack_alloc_node *const node,
                                               int lvl) {
   // FIXME: currently empty in order to compile, isn't required for the first
@@ -396,6 +412,7 @@ void mml::postfix_writer::do_stack_alloc_node(mml::stack_alloc_node *const node,
 
 //---------------------------------------------------------------------------
 
+// TODO
 void mml::postfix_writer::do_address_of_node(mml::address_of_node *const node,
                                              int lvl) {
   // FIXME: currently empty in order to compile, isn't required for the first
@@ -404,6 +421,7 @@ void mml::postfix_writer::do_address_of_node(mml::address_of_node *const node,
 
 //---------------------------------------------------------------------------
 
+// TODO
 void mml::postfix_writer::do_function_call_node(
     mml::function_call_node *const node, int lvl) {
   // FIXME: currently empty in order to compile, isn't required for the first
@@ -412,6 +430,7 @@ void mml::postfix_writer::do_function_call_node(
 
 //---------------------------------------------------------------------------
 
+// TODO
 void mml::postfix_writer::do_function_definition_node(
     mml::function_definition_node *const node, int lvl) {
   // FIXME: currently empty in order to compile, isn't required for the first
