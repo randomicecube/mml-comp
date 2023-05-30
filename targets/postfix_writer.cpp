@@ -23,12 +23,15 @@ void mml::postfix_writer::do_integer_node(cdk::integer_node *const node,
   else
     _pf.SINT(node->value());
 }
-// TODO
 void mml::postfix_writer::do_double_node(cdk::double_node *const node,
                                          int lvl) {
-  // EMPTY
+  // FIXME: this may need more stuff
+  if (_inFunctionBody) {
+    _pf.DOUBLE(node->value());     // load number to the stack
+  } else {
+    _pf.SDOUBLE(node->value());    // double is on the DATA segment
+  }
 }
-// TODO
 void mml::postfix_writer::do_string_node(cdk::string_node *const node,
                                          int lvl) {
   const auto lbl = mklbl(++_lbl);
@@ -39,9 +42,15 @@ void mml::postfix_writer::do_string_node(cdk::string_node *const node,
   _pf.LABEL(lbl);                  // give the string a name
   _pf.SSTRING(node->value());      // output string characters
 
-  /* leave the address on the stack */
-  _pf.TEXT();            // return to the TEXT segment
-  _pf.ADDR(lbl);         // the string to be printed
+  if (_inFunctionBody) {
+    // local variable initializer
+    _pf.TEXT();                    // return to the TEXT segment
+    _pf.ADDR(lbl);                 // the string to be printed
+  } else {
+    // global variable initializer
+    _pf.DATA();                    // return to the DATA segment
+    _pf.SADDR(lbl);                // the string to be printed
+  }
 }
 void mml::postfix_writer::do_nullptr_node(mml::nullptr_node *const node,
                                           int lvl) {
