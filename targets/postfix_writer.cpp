@@ -31,17 +31,17 @@ void mml::postfix_writer::do_double_node(cdk::double_node *const node,
 // TODO
 void mml::postfix_writer::do_string_node(cdk::string_node *const node,
                                          int lvl) {
-  int lbl1;
+  const auto lbl = mklbl(++_lbl);
 
   /* generate the string */
   _pf.RODATA();                    // strings are DATA readonly
   _pf.ALIGN();                     // make sure we are aligned
-  _pf.LABEL(mklbl(lbl1 = ++_lbl)); // give the string a name
+  _pf.LABEL(lbl);                  // give the string a name
   _pf.SSTRING(node->value());      // output string characters
 
   /* leave the address on the stack */
   _pf.TEXT();            // return to the TEXT segment
-  _pf.ADDR(mklbl(lbl1)); // the string to be printed
+  _pf.ADDR(lbl);         // the string to be printed
 }
 void mml::postfix_writer::do_nullptr_node(mml::nullptr_node *const node,
                                           int lvl) {
@@ -286,16 +286,28 @@ void mml::postfix_writer::do_print_node(mml::print_node *const node, int lvl) {
 
 //---------------------------------------------------------------------------
 
-// TODO
 void mml::postfix_writer::do_while_node(mml::while_node *const node, int lvl) {
   ASSERT_SAFE_EXPRESSIONS;
-  int lbl1, lbl2;
-  _pf.LABEL(mklbl(lbl1 = ++_lbl));
-  node->condition()->accept(this, lvl);
-  _pf.JZ(mklbl(lbl2 = ++_lbl));
-  node->block()->accept(this, lvl + 2);
-  _pf.JMP(mklbl(lbl1));
-  _pf.LABEL(mklbl(lbl2));
+  int whileCondLbl = ++_lbl;
+  int whileEndLbl = ++_lbl;
+  _whileCond.push(whileCondLbl); // the (currently) deepest while condition label
+  _whileEnd.push(whileEndLbl);   // the (currently) deepest while end label
+
+  _symtab.push(); // entering new context, new symbol table for block-local vars
+
+  _pf.ALIGN();   // make sure we are aligned
+  _pf.LABEL(mklbl(whileCondLbl)); // setting label for the condition
+  node->condition()->accept(this, lvl + 2); // condition evaluation
+  _pf.JZ(mklbl(whileEndLbl)); // if false, exit the cycle
+
+  node->block()->accept(this, lvl + 2); // block evaluation
+  _pf.JMP(mklbl(whileCondLbl)); // repeat
+  _pf.ALIGN();   // make sure we are aligned
+  _pf.LABEL(mklbl(whileEndLbl)); // setting label for the end of the cycle
+  
+  _symtab.pop(); // leaving current context
+  _whileCond.pop(); // leaving current while condition label
+  _whileEnd.pop(); // leaving current while end label
 }
 
 //---------------------------------------------------------------------------
