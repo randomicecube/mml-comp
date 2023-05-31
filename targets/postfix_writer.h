@@ -18,6 +18,7 @@ class postfix_writer : public basic_ast_visitor {
   cdk::symbol_table<mml::symbol> &_symtab;
 
   std::set<std::string> _functionsToDeclare;
+  std::set<std::string> _symbolsToDeclare;
 
   // code generation
   cdk::basic_postfix_emitter &_pf;
@@ -71,6 +72,9 @@ protected:
   void processIDPBinaryExpression(cdk::binary_operation_node *const node, int lvl);
   void processIDBinaryExpression(cdk::binary_operation_node *const node, int lvl);
   void processGeneralLogicalBinaryExpression(cdk::binary_operation_node *const node, int lvl);
+
+  void processLocalVariableInitialization(std::shared_ptr<mml::symbol> symbol, cdk::expression_node *const initializer, int lvl);
+  void processGlobalVariableInitialization(std::shared_ptr<mml::symbol> symbol, cdk::expression_node *const initializer, int lvl);
 
 public:
   // do not edit these lines

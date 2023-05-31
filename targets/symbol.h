@@ -39,7 +39,9 @@ public:
   void set_forward() { _is_forward = true; }
   bool is_forward() const { return _is_forward; }
   bool is_global() const { return _offset == 0; }
+  void set_offset(int offset) { _offset = offset; }
   int offset() const { return _offset; }
+  int qualifier() const { return _qualifier; }
 };
 
 inline auto make_symbol(std::shared_ptr<cdk::basic_type> type,

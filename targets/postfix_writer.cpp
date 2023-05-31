@@ -5,6 +5,8 @@
 #include <sstream>
 #include <string>
 
+#include "mml_parser.tab.h"
+
 //-------------------------PURPOSEFULLY EMPTY--------------------------------
 
 void mml::postfix_writer::do_nil_node(cdk::nil_node *const node, int lvl) {
@@ -453,11 +455,116 @@ void mml::postfix_writer::do_return_node(mml::return_node *const node,
 
 //---------------------------------------------------------------------------
 
-// TODO
 void mml::postfix_writer::do_declaration_node(mml::declaration_node *const node,
                                               int lvl) {
-  // FIXME: currently empty in order to compile, isn't required for the first
-  // delivery
+  ASSERT_SAFE_EXPRESSIONS;
+  const auto id = node->identifier();
+  const auto type_size = node->type()->size(); // size in bytes
+  int offset = 0;
+  
+  // the offset represents the frame pointer, which always contains the previous
+  // value of the stack pointer
+  // if the variable is global, the offset is 0
+  // if the variable is local, the offset is negative
+  // if the variable is a function argument, the offset is positive
+  // note that the FP is somewhere in between the arguments and the local
+  // variables, not necessarily exactly in the middle
+  // read: wiki + https://people.cs.rutgers.edu/~pxk/419/notes/frames.html
+  if (_inFunctionArgs) {
+    // the function's arguments are placed in the stack by the caller
+    offset = _offset;
+    _offset += type_size;
+  } else if (_inFunctionBody) {
+    // the function's local variables are placed in the stack by the callee
+    _offset -= type_size;
+    offset = _offset;
+  }
+
+  auto symbol = new_symbol();
+  if (symbol) {
+    symbol->set_offset(offset);
+    reset_new_symbol();
+  }
+
+  // if it's global, we'll need to declare it whenever we reach main, if it's
+  // not initialized until then
+  if (!_inFunctionArgs && !_inFunctionBody)
+    _symbolsToDeclare.insert(symbol->name());
+
+  // we may still need to initialize the variable
+  if (node->init()) {
+    if (_inFunctionBody)
+      processLocalVariableInitialization(symbol, node->init(), lvl);
+    else
+      processGlobalVariableInitialization(symbol, node->init(), lvl);
+    _symbolsToDeclare.erase(symbol->name());
+  }
+}
+void mml::postfix_writer::processLocalVariableInitialization(std::shared_ptr<mml::symbol> symbol, cdk::expression_node *const initializer, int lvl) {
+  initializer->accept(this, lvl + 2);
+  switch (symbol->type()->name()) {
+    case cdk::TYPE_INT:
+    case cdk::TYPE_STRING:
+    case cdk::TYPE_POINTER:
+    case cdk::TYPE_FUNCTIONAL:
+      _pf.LOCAL(symbol->offset());
+      _pf.STINT();
+      break;
+    case cdk::TYPE_DOUBLE:
+      if (initializer->is_typed(cdk::TYPE_INT))
+        _pf.I2D();
+      _pf.LOCAL(symbol->offset());
+      _pf.STDOUBLE();
+      break;
+    default:
+      error(initializer->lineno(), "invalid type for variable initialization");
+  }
+}
+void mml::postfix_writer::processGlobalVariableInitialization(std::shared_ptr<mml::symbol> symbol, cdk::expression_node *const initializer, int lvl) {
+  switch (symbol->type()->name()) {
+    case cdk::TYPE_INT:
+    case cdk::TYPE_STRING:
+    case cdk::TYPE_POINTER:
+      _pf.DATA(); // Data segment, for global variables
+      _pf.ALIGN();
+      _pf.LABEL(symbol->name());
+      initializer->accept(this, lvl + 2);
+      break;
+    case cdk::TYPE_DOUBLE:
+      _pf.DATA(); // Data segment, for global variables
+      _pf.ALIGN();
+      _pf.LABEL(symbol->name());
+      switch (initializer->type()->name()) {
+        case cdk::TYPE_INT:
+          // here, we actually want to initialize the variable with a double
+          // thus, we need to convert the expression to a double node
+          // NOTE: I don't like these variable names either, from DM
+          const cdk::integer_node *dclini = dynamic_cast<const cdk::integer_node*>(initializer);
+          cdk::double_node *ddi = new cdk::double_node(dclini->lineno(), dclini->value());
+          ddi->accept(this, lvl + 2);
+          break;
+        case cdk::TYPE_DOUBLE:
+          initializer->accept(this, lvl + 2);
+          break;
+        default:
+          error(initializer->lineno(), "invalid type for double variable initialization");
+      }
+      break;
+    case cdk::TYPE_FUNCTIONAL:
+      // see last example in https://web.tecnico.ulisboa.pt/~david.matos/w/pt/index.php/Code_Generation#Basic_Structures_.28data.29
+      _functions.push_back(symbol);
+      reset_new_symbol();
+      initializer->accept(this, lvl + 2);
+      _pf.DATA(); // Data segment, for global variables
+      _pf.ALIGN();
+      if (symbol->qualifier() == tPUBLIC)
+        _pf.GLOBAL(symbol->name(), _pf.OBJ());
+      _pf.LABEL(symbol->name());
+      _pf.SADDR(symbol->name());
+      break;
+    default:
+      error(initializer->lineno(), "invalid type for variable initialization");
+  }
 }
 
 //---------------------------------------------------------------------------
