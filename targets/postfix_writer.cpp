@@ -403,11 +403,39 @@ void mml::postfix_writer::do_next_node(mml::next_node *const node, int lvl) {
 
 //---------------------------------------------------------------------------
 
-// TODO
 void mml::postfix_writer::do_return_node(mml::return_node *const node,
                                          int lvl) {
-  // FIXME: currently empty in order to compile, isn't required for the first
-  // delivery
+  ASSERT_SAFE_EXPRESSIONS;
+
+  // should not reach here without returning a value (if not void)
+  _returnSeen = true;
+  const auto current_function_type_name = cdk::functional_type::cast(
+    _functions.back()->type()
+  )->output(0)->name();
+
+  if (current_function_type_name != cdk::TYPE_VOID) {
+    node->retval()->accept(this, lvl + 2);
+    switch (current_function_type_name) {
+    case cdk::TYPE_INT:
+      _pf.STFVAL32(); // removes 4 bytes (an int) from the stack
+      break;
+    case cdk::TYPE_DOUBLE:
+      if (node->retval()->is_typed(cdk::TYPE_INT))
+        _pf.I2D(); // converts int to double
+      _pf.STFVAL64(); // removes 8 bytes (a double) from the stack
+      break;
+    case cdk::TYPE_STRING:
+    case cdk::TYPE_POINTER:
+    case cdk::TYPE_FUNCTIONAL:
+      _pf.STFVAL32(); // removes 4 bytes from the stack
+      break;
+    default:
+      error(node->lineno(), "invalid return type");
+    }
+  }
+
+  _pf.LEAVE(); // leaves the function, destroys its local stack data
+  _pf.RET(); // returns from a function -- the value being returned has been removed from the stack
 }
 
 //---------------------------------------------------------------------------

@@ -27,12 +27,16 @@ class postfix_writer : public basic_ast_visitor {
   bool _inFunctionBody = false;
   bool _inFunctionArgs = false;
   bool _returnSeen = false; // when building a function
-  std::vector<lbl> _whileCond, _whileEnd; // while labels -- for break/continue
+  // while labels -- for break/continue; work like stacks
+  std::vector<lbl> _whileCond, _whileEnd;
 
   // remember function name for resolving '@'
   std::string _currentFunctionName;
   // where to jump when a return occurs or an exclusive section ends
   std::string _currentBodyReturnLabel;
+  // for keeping track of functions and their arguments
+  // works like a stack
+  std::vector<std::shared_ptr<mml::symbol>> _functions;
 
   int _offset = 0; // current frame pointer offset -- 0 means no vars defined 
 
