@@ -230,12 +230,21 @@ void mml::postfix_writer::do_eq_node(cdk::eq_node *const node, int lvl) {
 //---------------------------------------------------------------------------
 // TODO: all below
 
-// TODO
 void mml::postfix_writer::do_variable_node(cdk::variable_node *const node,
                                            int lvl) {
   ASSERT_SAFE_EXPRESSIONS;
-  // simplified generation: all variables are global
-  _pf.ADDR(node->name());
+  const auto &id = node->name();
+  const auto symbol = _symtab.find(id);
+  // a symbol may be global, local, or forwarded from another module
+  if (symbol->is_global())
+    _pf.ADDR(node->name());
+  else if (symbol->is_forward())
+    // if it's been forwarded, we won't branch to it, but rather call it;
+    // as such, we'll needs its label (note that this'll be useful in
+    // function calls)
+    _currentForwardLabel = symbol->name();
+  else
+    _pf.LOCAL(symbol->offset());
 }
 
 void mml::postfix_writer::do_rvalue_node(cdk::rvalue_node *const node,
@@ -245,9 +254,13 @@ void mml::postfix_writer::do_rvalue_node(cdk::rvalue_node *const node,
   if (node->type()->name() == cdk::TYPE_DOUBLE) {
     _pf.LDDOUBLE();
   } else {
-    // integers, pointers, and strings
-    // FIXME: may need forward check here
-    _pf.LDINT();
+    // integers, pointers, strings, functionals
+
+    // note that if we're dealing with forwarded methods, we don't want to
+    // branch to them, and as such, loading its first instruction address
+    // is irrelevant (as we'll just call it by its label)
+    if (_currentForwardLabel.empty())
+      _pf.LDINT();
   }
 }
 

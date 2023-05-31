@@ -16,6 +16,8 @@ class symbol {
   bool _is_foreign = false;
   bool _is_forward = false;
 
+  int _offset = 0;
+
 public:
   symbol(std::shared_ptr<cdk::basic_type> type, const std::string &name,
          long value, int qualifier)
@@ -36,6 +38,8 @@ public:
   bool is_foreign() const { return _is_foreign; }
   void set_forward() { _is_forward = true; }
   bool is_forward() const { return _is_forward; }
+  bool is_global() const { return _offset == 0; }
+  int offset() const { return _offset; }
 };
 
 inline auto make_symbol(std::shared_ptr<cdk::basic_type> type,

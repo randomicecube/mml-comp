@@ -34,6 +34,8 @@ class postfix_writer : public basic_ast_visitor {
   std::string _currentFunctionName;
   // where to jump when a return occurs or an exclusive section ends
   std::string _currentBodyReturnLabel;
+  // a given forwarded function's label, as we want to call it, not branch to it
+  std::string _currentForwardLabel;
   // for keeping track of functions and their arguments
   // works like a stack
   std::vector<std::shared_ptr<mml::symbol>> _functions;
