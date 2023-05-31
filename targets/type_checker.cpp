@@ -266,6 +266,7 @@ void mml::type_checker::do_not_node(cdk::not_node *const node, int lvl) {
 
 //---------------------------------------------------------------------------
 
+// FIXME: add and sub may be wrong, as I think only sub_node should allow pointer subtraction
 void mml::type_checker::do_add_node(cdk::add_node *const node, int lvl) {
   processIDPBinaryExpression(node, lvl);
 }
