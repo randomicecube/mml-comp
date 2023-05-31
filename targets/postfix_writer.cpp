@@ -642,11 +642,65 @@ void mml::postfix_writer::do_address_of_node(mml::address_of_node *const node,
 
 //---------------------------------------------------------------------------
 
-// TODO
 void mml::postfix_writer::do_function_call_node(
     mml::function_call_node *const node, int lvl) {
-  // FIXME: currently empty in order to compile, isn't required for the first
-  // delivery
+  ASSERT_SAFE_EXPRESSIONS;
+  std::vector<std::shared_ptr<cdk::basic_type>> arg_types;
+  if (node->function())
+    // in non recursive calls, the arguments are already stored in the node itself
+    arg_types = cdk::functional_type::cast(node->function()->type())->input()->components();
+  else {
+    // in recursive calls, we'll want to fetch the symbol associated with
+    // the deepest function we can find, and retrieve its arguments
+    auto deepest_function = _functions.back();
+    arg_types = cdk::functional_type::cast(deepest_function->type())->input()->components();
+  }
+
+  size_t args_size = 0; // size of all the arguments in bytes
+  for (size_t ax = node->arguments()->size() - 1; ax >= 0; ax--) {
+    auto arg = dynamic_cast<cdk::expression_node*>(node->arguments()->node(ax));
+    arg->accept(this, lvl + 2);
+    if (arg_types[ax]->name() == cdk::TYPE_DOUBLE && arg->type()->name() == cdk::TYPE_INT) {
+      args_size += 4; // if we're passing an integer where a double is expected, we need to allocate 4 additional bytes
+      _pf.I2D();      // also need to convert integer to double
+    }
+    args_size += arg->type()->size();
+  }
+
+  // there are 3 cases now: we may want to do a recursive, non-recursive "regular", or forwarded call
+  if (node->function()) {
+    // non-recursive calls
+    _currentForwardLabel.clear();
+    // if we accept a forwarded function, the label will once again be set
+    node->function()->accept(this, lvl + 2);
+    if (_currentForwardLabel.empty()) // it's a "regular" non-recursive call
+      _pf.BRANCH();
+    else // it's a forwarded call
+      _pf.CALL(_currentForwardLabel);
+  } else {
+    // recursive calls
+    // TODO: check if this works
+    _pf.CALL(_functions.back()->name());
+  }
+
+  if (args_size > 0)
+    _pf.TRASH(args_size); // removes no-longer-needed arguments from the stack
+  
+  switch (node->type()->name()) {
+  case cdk::TYPE_INT:
+  case cdk::TYPE_STRING:
+  case cdk::TYPE_POINTER:
+  case cdk::TYPE_VOID:
+    _pf.LDFVAL32();
+    break;
+  case cdk::TYPE_DOUBLE:
+    _pf.LDFVAL64();
+    break;
+  default: // can't happen!
+    error(node->lineno(), "cannot call expression of unknown type");
+  }
+
+  _currentForwardLabel.clear();
 }
 
 //---------------------------------------------------------------------------
