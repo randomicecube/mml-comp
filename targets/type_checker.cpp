@@ -530,7 +530,7 @@ void mml::type_checker::do_declaration_node(mml::declaration_node *const node,
 void mml::type_checker::do_input_node(mml::input_node *const node, int lvl) {
   ASSERT_UNSPEC;
   // TODO: check if this is correct;; in MML, expressions are always int
-  node->type(cdk::primitive_type::create(4, cdk::TYPE_INT));
+  node->type(cdk::primitive_type::create(0, cdk::TYPE_UNSPEC));
 }
 
 //---------------------------------------------------------------------------
