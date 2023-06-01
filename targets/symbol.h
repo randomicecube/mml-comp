@@ -14,7 +14,6 @@ class symbol {
   int _qualifier;
   bool _is_main = false;
   bool _is_foreign = false;
-  bool _is_forward = false;
 
   int _offset = 0;
 
@@ -36,8 +35,6 @@ public:
   bool is_main() const { return _is_main; }
   void set_foreign() { _is_foreign = true; }
   bool is_foreign() const { return _is_foreign; }
-  void set_forward() { _is_forward = true; }
-  bool is_forward() const { return _is_forward; }
   bool is_global() const { return _offset == 0; }
   void set_offset(int offset) { _offset = offset; }
   int offset() const { return _offset; }

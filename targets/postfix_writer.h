@@ -76,6 +76,9 @@ protected:
   void processLocalVariableInitialization(std::shared_ptr<mml::symbol> symbol, cdk::expression_node *const initializer, int lvl);
   void processGlobalVariableInitialization(std::shared_ptr<mml::symbol> symbol, cdk::expression_node *const initializer, int lvl);
 
+  void processMainFunction(mml::function_definition_node *const node, int lvl);
+  void processNonMainFunction(mml::function_definition_node *const node, int lvl);
+
 public:
   // do not edit these lines
 #define __IN_VISITOR_HEADER__

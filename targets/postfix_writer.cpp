@@ -240,7 +240,7 @@ void mml::postfix_writer::do_variable_node(cdk::variable_node *const node,
   // a symbol may be global, local, or forwarded from another module
   if (symbol->is_global())
     _pf.ADDR(node->name());
-  else if (symbol->is_forward())
+  else if (symbol->is_foreign())
     // if it's been forwarded, we won't branch to it, but rather call it;
     // as such, we'll needs its label (note that this'll be useful in
     // function calls)
@@ -534,13 +534,17 @@ void mml::postfix_writer::processGlobalVariableInitialization(std::shared_ptr<mm
       _pf.DATA(); // Data segment, for global variables
       _pf.ALIGN();
       _pf.LABEL(symbol->name());
+
+      // the following initializations need to be done outside of the switch
+      const cdk::integer_node *dclini;
+      cdk::double_node *ddi;
       switch (initializer->type()->name()) {
         case cdk::TYPE_INT:
           // here, we actually want to initialize the variable with a double
           // thus, we need to convert the expression to a double node
-          // NOTE: I don't like these variable names either, from DM
-          const cdk::integer_node *dclini = dynamic_cast<const cdk::integer_node*>(initializer);
-          cdk::double_node *ddi = new cdk::double_node(dclini->lineno(), dclini->value());
+          // NOTE: I don't like these variable names either, taken from DM
+          dclini = dynamic_cast<const cdk::integer_node*>(initializer);
+          ddi = new cdk::double_node(dclini->lineno(), dclini->value());
           ddi->accept(this, lvl + 2);
           break;
         case cdk::TYPE_DOUBLE:
@@ -657,7 +661,7 @@ void mml::postfix_writer::do_function_call_node(
   }
 
   size_t args_size = 0; // size of all the arguments in bytes
-  for (size_t ax = node->arguments()->size() - 1; ax >= 0; ax--) {
+  for (int ax = node->arguments()->size() - 1; ax >= 0; ax--) {
     auto arg = dynamic_cast<cdk::expression_node*>(node->arguments()->node(ax));
     arg->accept(this, lvl + 2);
     if (arg_types[ax]->name() == cdk::TYPE_DOUBLE && arg->type()->name() == cdk::TYPE_INT) {
@@ -705,10 +709,108 @@ void mml::postfix_writer::do_function_call_node(
 
 //---------------------------------------------------------------------------
 
-// TODO
 void mml::postfix_writer::do_function_definition_node(
     mml::function_definition_node *const node, int lvl) {
-  // FIXME: currently empty in order to compile, isn't required for the first
-  // delivery
+  ASSERT_SAFE_EXPRESSIONS;
+  node->main() ? processMainFunction(node, lvl) : processNonMainFunction(node, lvl);
 }
+void mml::postfix_writer::processMainFunction(
+    mml::function_definition_node *const node, int lvl) {
+  std::shared_ptr<mml::symbol> symbol;
+  for (auto s_name: _symbolsToDeclare) {
+    symbol = _symtab.find(s_name, 0); // FIXME: is 0 relevant here?
+    if (symbol->is_foreign())
+      _functionsToDeclare.insert(s_name);
+    else  {
+      _pf.BSS();
+      _pf.ALIGN();
+      _pf.LABEL(s_name);
+      _pf.SALLOC(symbol->type()->size());
+    }            
+  }
 
+  auto main = new_symbol();
+  _functions.push_back(main);
+  reset_new_symbol();
+
+  // generate the main function itself
+  _symtab.push(); // entering new context
+  _pf.TEXT();
+  _pf.ALIGN();
+  _pf.GLOBAL("_main", _pf.FUNC());
+  _pf.LABEL("_main");
+
+  // compute stack size to be reserved for local variables
+  frame_size_calculator fsc(_compiler, _symtab, main);
+
+  _pf.ENTER(fsc.localsize());
+
+  _inFunctionBody = true;
+  node->block()->accept(this, lvl + 2);
+  _inFunctionBody = false;
+
+  _symtab.pop(); // leaving context
+  if (!_returnSeen) {
+    // programmers aren't forced to return anything in main; by default, we return 0
+    _pf.INT(0);
+    _pf.STFVAL32();
+  }
+  _pf.LEAVE();
+  _pf.RET();
+
+  _functions.pop_back();
+  for (auto forwarded_function: _functionsToDeclare)
+    _pf.EXTERN(forwarded_function);
+  _returnSeen = false;
+}
+void mml::postfix_writer::processNonMainFunction(
+    mml::function_definition_node *const node, int lvl) {
+  auto function = new_symbol();
+  if (function) {
+    _functions.push_back(function);
+    reset_new_symbol();
+  }
+
+  _currentBodyReturnLabel = mklbl(++_lbl);
+
+  _offset = 8; // prepare for arguments (4: remember to account for return address)
+  _symtab.push(); // args scope
+
+  if (node->arguments()) {
+    _inFunctionArgs = true;
+    for (size_t ix = 0; ix < node->arguments()->size(); ix++) {
+      auto arg = node->arguments()->node(ix);
+      if (arg == nullptr) // empty args sequence;; TODO: is this relevant?
+        break;
+      arg->accept(this, 0);
+    }
+    _inFunctionArgs = false;
+  }
+
+  _pf.TEXT(_currentBodyReturnLabel);
+  _pf.ALIGN();
+  // FIXME: is it needed to set the function as global?
+  _pf.GLOBAL(_currentBodyReturnLabel, _pf.FUNC());
+  _pf.LABEL(_currentBodyReturnLabel);
+
+  // compute stack size to be reserved for local variables
+  frame_size_calculator fsc(_compiler, _symtab, function);
+  node->block()->accept(this, lvl + 2);
+  _pf.ENTER(fsc.localsize());
+
+  _offset = 0; // reset offset, prepare for local variables
+  auto _previouslyInFunctionBody = _inFunctionBody;
+  _inFunctionBody = true;
+  node->block()->accept(this, lvl + 2);
+  _inFunctionBody = _previouslyInFunctionBody;
+  _symtab.pop(); // leaving args scope
+
+  if (!_returnSeen) {
+    // for cases such as void functions
+    _pf.LEAVE();
+    _pf.RET();
+  }
+
+  if (function)
+    _functions.pop_back();
+}

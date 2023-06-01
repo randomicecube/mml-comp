@@ -645,6 +645,7 @@ void mml::type_checker::do_function_definition_node(
   if (node->main()) {
     const auto fun_int_type = cdk::functional_type::create(
         cdk::primitive_type::create(4, cdk::TYPE_INT));
+    // Note that it's ok to name the function _main, as no variable may have underscores
     const auto main = mml::make_symbol(fun_int_type, "_main", 0, tPRIVATE);
     main->set_main();
     const auto main_at = mml::make_symbol(fun_int_type, "@", 0, tPRIVATE);
