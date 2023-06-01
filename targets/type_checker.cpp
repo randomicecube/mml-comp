@@ -180,8 +180,14 @@ void mml::type_checker::processIDPBinaryExpression(
 		// TODO: we still need to see if this is allowed
     node->type(node->right()->type());
   } else {
-		if (isSub && node->left()->is_typed(cdk::TYPE_POINTER) && node->right()->is_typed(cdk::TYPE_POINTER)) {
-			node->type(node->right()->type());
+		if (isSub) {
+      if (
+        (node->left()->is_typed(cdk::TYPE_POINTER) && node->right()->is_typed(cdk::TYPE_POINTER)) &&
+        (compatible_ptr_types(node->left()->type(), node->right()->type()))
+      ) {
+        node->type(node->left()->type());
+        return;
+      }
 		}
     throw std::string("wrong types in binary expression");
   }
