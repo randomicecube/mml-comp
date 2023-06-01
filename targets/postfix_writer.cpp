@@ -177,6 +177,7 @@ void mml::postfix_writer::do_add_node(cdk::add_node *const node, int lvl) {
 void mml::postfix_writer::do_sub_node(cdk::sub_node *const node, int lvl) {
   std::cout << "[DEBUG] Entering node: SUB_NODE" << std::endl;
   processIDPBinaryExpression(node, lvl);
+	// FIXME: missing pointer-pointer
 
   if (node->is_typed(cdk::TYPE_DOUBLE))
     _pf.DSUB();
