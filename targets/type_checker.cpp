@@ -169,7 +169,7 @@ void mml::type_checker::processIDBinaryExpression(
 }
 
 void mml::type_checker::processIDPBinaryExpression(
-    cdk::binary_operation_node *const node, int lvl) {
+    cdk::binary_operation_node *const node, int lvl, bool isSub) {
   ASSERT_UNSPEC;
   if (processBinaryExpression(node, lvl))
     return;
@@ -177,8 +177,12 @@ void mml::type_checker::processIDPBinaryExpression(
   if (node->left()->is_typed(cdk::TYPE_POINTER) && node->right()->is_typed(cdk::TYPE_INT)) {
     node->type(node->left()->type());
   } else if (node->left()->is_typed(cdk::TYPE_INT) && node->right()->is_typed(cdk::TYPE_POINTER)) {
+		// TODO: we still need to see if this is allowed
     node->type(node->right()->type());
   } else {
+		if (isSub && node->left()->is_typed(cdk::TYPE_POINTER) && node->right()->is_typed(cdk::TYPE_POINTER)) {
+			node->type(node->right()->type());
+		}
     throw std::string("wrong types in binary expression");
   }
 }
@@ -271,10 +275,10 @@ void mml::type_checker::do_not_node(cdk::not_node *const node, int lvl) {
 
 // FIXME: add and sub may be wrong, as I think only sub_node should allow pointer subtraction
 void mml::type_checker::do_add_node(cdk::add_node *const node, int lvl) {
-  processIDPBinaryExpression(node, lvl);
+  processIDPBinaryExpression(node, lvl, false);
 }
 void mml::type_checker::do_sub_node(cdk::sub_node *const node, int lvl) {
-  processIDPBinaryExpression(node, lvl);
+  processIDPBinaryExpression(node, lvl, true);
 }
 void mml::type_checker::do_mul_node(cdk::mul_node *const node, int lvl) {
   processIDBinaryExpression(node, lvl);

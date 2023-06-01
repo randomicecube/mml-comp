@@ -41,7 +41,7 @@ protected:
   void processIDBinaryExpression(cdk::binary_operation_node *const node,
                                  int lvl);
   void processIDPBinaryExpression(cdk::binary_operation_node *const node,
-                                  int lvl);
+                                  int lvl, bool isSub);
   void
   processScalarLogicalBinaryExpression(cdk::binary_operation_node *const node,
                                        int lvl);
