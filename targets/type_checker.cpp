@@ -81,9 +81,9 @@ void mml::type_checker::compatible_node_types(std::shared_ptr<cdk::basic_type> t
                            cdk::typename_type tname_node,
                            cdk::typename_type tname_field,
                            std::string field_name) {
-  const auto fun_t_node = cdk::functional_type::cast(t_node);
-  const auto fun_t_field = cdk::functional_type::cast(t_field);
-  const auto ref_t_field = cdk::reference_type::cast(t_field)->referenced();
+  std::shared_ptr<cdk::functional_type> fun_t_node;
+  std::shared_ptr<cdk::functional_type> fun_t_field;
+  std::shared_ptr<cdk::basic_type> ref_t_field;
 
   switch (tname_node) {
   case cdk::TYPE_INT:
@@ -105,6 +105,9 @@ void mml::type_checker::compatible_node_types(std::shared_ptr<cdk::basic_type> t
       throw std::string("wrong type in " + field_name + " (expected pointer)");
     break;
   case cdk::TYPE_FUNCTIONAL:
+    fun_t_node = cdk::functional_type::cast(t_node);
+    fun_t_field = cdk::functional_type::cast(t_field);
+    ref_t_field = cdk::reference_type::cast(t_field)->referenced();
     if ((tname_field == cdk::TYPE_FUNCTIONAL &&
          !compatible_fun_types(fun_t_node, fun_t_field)) ||
         (tname_field == cdk::TYPE_POINTER && ref_t_field == nullptr))
@@ -519,11 +522,16 @@ void mml::type_checker::do_declaration_node(mml::declaration_node *const node,
   const auto &init = node->init();
   if (init) {
     init->accept(this, lvl + 2);
-    const auto &type_name = node->type()->name();
-    const auto &init_type_name = init->type()->name();
-    compatible_node_types(node->type(), init->type(), type_name, init_type_name,
-                          "initializer");
+    if (node->type()) {
+      const auto &type_name = node->type()->name();
+      const auto &init_type_name = init->type()->name();
+      compatible_node_types(node->type(), init->type(), type_name, init_type_name,
+                            "initializer");
+    } else
+      node->type(init->type());
   }
+  const auto symbol = mml::make_symbol(node->type(), node->identifier(), (bool) node->init(), node->qualifier());
+  // TODO: redeclaration/definition of symbol logic
 }
 
 //---------------------------------------------------------------------------
