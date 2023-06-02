@@ -480,26 +480,19 @@ void mml::type_checker::do_if_else_node(mml::if_else_node *const node,
 // FIXME: I'm not proud of the variable names here
 void mml::type_checker::do_return_node(mml::return_node *const node, int lvl) {
   const auto symbol = _symtab.find("@", 1);
-  if (!symbol) { // a return may only be inside a function
-    throw std::string("return statement found outside function");
-  }
-
-  const auto main = _symtab.find("_main", 0);
   const auto ret_val = node->retval();
-  if (main) {
-    if (!ret_val)
-      throw std::string(
-          "wrong type of return value in main (integer expected)");
-    ret_val->accept(this, lvl + 2);
-    if (!ret_val->is_typed(cdk::TYPE_INT))
-      throw std::string(
-          "wrong type of return value in main (integer expected)");
-    return;
-  }
-
-  if (!ret_val) {
-    if (!symbol->is_typed(cdk::TYPE_VOID))
-      throw std::string("missing return value in non-void function");
+  if (!symbol) { // a return may only be inside a function
+    const auto main = _symtab.find("_main", 0);
+    if (main) {
+      if (!ret_val)
+        throw std::string("wrong type of return value in main (int expected)");
+      ret_val->accept(this, lvl + 2);
+      if (!ret_val->is_typed(cdk::TYPE_INT))
+        throw std::string("wrong type of return value in main (int expected)");
+      return;
+    }
+    throw std::string("return statement found outside function");
+  } else if (!ret_val) {
     return;
   }
 
@@ -515,7 +508,7 @@ void mml::type_checker::do_return_node(mml::return_node *const node, int lvl) {
 
   const auto type_name = fun_sym_type->output(0)->name();
   const auto node_type = ret_val->type();
-  const auto node_type_name = ret_val->type()->name();
+  const auto node_type_name = node_type->name();
 
   compatible_node_types(output, node_type, type_name, node_type_name,
                         "return value");
