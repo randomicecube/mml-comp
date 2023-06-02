@@ -75,41 +75,41 @@ bool mml::type_checker::check_compatible_types(std::shared_ptr<cdk::basic_type> 
   return true;
 }
 
-void mml::type_checker::throw_incompatible_types(std::shared_ptr<cdk::basic_type> t_node,
-                           std::shared_ptr<cdk::basic_type> t_field,
-                           cdk::typename_type tname_node,
-                           cdk::typename_type tname_field,
+void mml::type_checker::throw_incompatible_types(std::shared_ptr<cdk::basic_type> t1,
+                           std::shared_ptr<cdk::basic_type> t2,
                            bool is_return) {
+  const auto t1_name = t1->name();
+  const auto t2_name = t2->name();
   std::shared_ptr<cdk::functional_type> fun_t_node;
   std::shared_ptr<cdk::functional_type> fun_t_field;
   std::shared_ptr<cdk::basic_type> ref_t_field;
   const std::string field_name = is_return ? "return" : "initialization"; // hacky
 
-  switch (tname_node) {
+  switch (t1_name) {
   case cdk::TYPE_INT:
-    if (tname_field != cdk::TYPE_INT)
+    if (t2_name != cdk::TYPE_INT)
       throw std::string("wrong type in " + field_name + " (expected int)");
     break;
   case cdk::TYPE_DOUBLE:
-    if (!(tname_field == cdk::TYPE_INT || tname_field == cdk::TYPE_DOUBLE))
+    if (!(t2_name == cdk::TYPE_INT || t2_name == cdk::TYPE_DOUBLE))
       throw std::string("wrong type in " + field_name +
                         " (expected double or int)");
     break;
   case cdk::TYPE_STRING:
-    if (tname_field != cdk::TYPE_STRING)
+    if (t2_name != cdk::TYPE_STRING)
       throw std::string("wrong type in " + field_name + " (expected string)");
     break;
   case cdk::TYPE_POINTER:
-    if (is_return == (tname_field == cdk::TYPE_POINTER) &&
-        !check_compatible_ptr_types(t_node, t_field))
+    if (is_return == (t2_name == cdk::TYPE_POINTER) &&
+        !check_compatible_ptr_types(t1, t2))
       throw std::string("wrong type in " + field_name + " (expected pointer)");
     break;
   case cdk::TYPE_FUNCTIONAL:
-    fun_t_node = cdk::functional_type::cast(t_node);
-    fun_t_field = cdk::functional_type::cast(t_field);
+    fun_t_node = cdk::functional_type::cast(t1);
+    fun_t_field = cdk::functional_type::cast(t2);
     if (
-      (tname_field == cdk::TYPE_FUNCTIONAL && !check_compatible_fun_types(fun_t_node, fun_t_field)) ||
-      (tname_field == cdk::TYPE_POINTER && cdk::reference_type::cast(t_field)->referenced() == nullptr) // f = null
+      (t2_name == cdk::TYPE_FUNCTIONAL && !check_compatible_fun_types(fun_t_node, fun_t_field)) ||
+      (t2_name == cdk::TYPE_POINTER && cdk::reference_type::cast(t2)->referenced() == nullptr) // f = null
     )
       throw std::string("wrong type in " + field_name + " (expected function)");
     break;
@@ -535,8 +535,6 @@ void mml::type_checker::do_return_node(mml::return_node *const node, int lvl) {
     return;
   }
 
-  std::cout << "[DEBUG -- TYPE CHECKER] Currently passed the !symbol check" << std::endl;
-
   const auto &fun_sym_type = cdk::functional_type::cast(symbol->type());
   const auto output = fun_sym_type->output(0);
   const bool has_output = fun_sym_type->output() != nullptr;
@@ -547,11 +545,8 @@ void mml::type_checker::do_return_node(mml::return_node *const node, int lvl) {
   if (!has_output)
     throw std::string("unknown return type in function");
 
-  const auto type_name = output->name();
   const auto node_type = ret_val->type();
-  const auto node_type_name = node_type->name();
-
-  throw_incompatible_types(output, node_type, type_name, node_type_name);
+  throw_incompatible_types(output, node_type);
   std::cout << "[DEBUG -- TYPE CHECKER] Leaving node: RETURN_NODE" << std::endl;
 }
 
@@ -576,7 +571,7 @@ void mml::type_checker::do_declaration_node(mml::declaration_node *const node,
   if (init) {
     init->accept(this, lvl + 2);
     if (node->type())
-      throw_incompatible_types(node->type(), init->type(), node->type()->name(), init->type()->name(), false);
+      throw_incompatible_types(node->type(), init->type(), false);
     else
       node->type(init->type());
   }
