@@ -177,7 +177,6 @@ void mml::type_checker::processIDPBinaryExpression(
   if (node->left()->is_typed(cdk::TYPE_POINTER) && node->right()->is_typed(cdk::TYPE_INT)) {
     node->type(node->left()->type());
   } else if (node->left()->is_typed(cdk::TYPE_INT) && node->right()->is_typed(cdk::TYPE_POINTER)) {
-		// TODO: we still need to see if this is allowed
     node->type(node->right()->type());
   } else {
 		if (isSub) {

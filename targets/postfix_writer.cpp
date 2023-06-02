@@ -147,19 +147,19 @@ void mml::postfix_writer::do_sequence_node(cdk::sequence_node *const node,
 void mml::postfix_writer::processIDPBinaryExpression(cdk::binary_operation_node *const node, int lvl) {
   ASSERT_SAFE_EXPRESSIONS;
   node->left()->accept(this, lvl + 2);
-  const auto ref_left = cdk::reference_type::cast(node->left()->type())->referenced();
   if (node->is_typed(cdk::TYPE_DOUBLE) && node->left()->is_typed(cdk::TYPE_INT))
     _pf.I2D();
   else if (node->is_typed(cdk::TYPE_POINTER) && node->left()->is_typed(cdk::TYPE_INT)) {
+    const auto ref_left = cdk::reference_type::cast(node->left()->type())->referenced();
     _pf.INT(ref_left->size());
     _pf.MUL();
   }
 
   node->right()->accept(this, lvl + 2);
-  const auto ref_right = cdk::reference_type::cast(node->right()->type())->referenced();
   if (node->is_typed(cdk::TYPE_DOUBLE) && node->right()->is_typed(cdk::TYPE_INT))
     _pf.I2D();
   else if (node->is_typed(cdk::TYPE_POINTER) && node->right()->is_typed(cdk::TYPE_INT)) {
+    const auto ref_right = cdk::reference_type::cast(node->right()->type())->referenced();
     _pf.INT(ref_right->size());
     _pf.MUL();
   }
@@ -181,8 +181,18 @@ void mml::postfix_writer::do_sub_node(cdk::sub_node *const node, int lvl) {
 
   if (node->is_typed(cdk::TYPE_DOUBLE))
     _pf.DSUB();
-  else
+  else {
     _pf.SUB();
+    // pointer - pointer requires a special treatment
+    const auto ref_left = cdk::reference_type::cast(node->left()->type())->referenced();
+    if (
+      (node->left()->is_typed(cdk::TYPE_POINTER) && node->right()->is_typed(cdk::TYPE_POINTER)) &&
+      ref_left->name() != cdk::TYPE_VOID
+    ) {
+      _pf.INT(ref_left->size());
+      _pf.DIV();
+    }
+  }
   std::cout << "[DEBUG] Leaving node: SUB_NODE" << std::endl;
 }
 
