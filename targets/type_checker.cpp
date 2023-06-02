@@ -463,11 +463,18 @@ void mml::type_checker::do_while_node(mml::while_node *const node, int lvl) {
 
 void mml::type_checker::do_if_node(mml::if_node *const node, int lvl) {
   node->condition()->accept(this, lvl + 4);
+  if (!node->condition()->is_typed(cdk::TYPE_INT))
+    throw std::string("condition must evaluate to integer");
+  node->block()->accept(this, lvl + 4);
 }
 
 void mml::type_checker::do_if_else_node(mml::if_else_node *const node,
                                         int lvl) {
   node->condition()->accept(this, lvl + 4);
+  if (!node->condition()->is_typed(cdk::TYPE_INT))
+    throw std::string("condition must evaluate to integer");
+  node->thenblock()->accept(this, lvl + 4);
+  node->elseblock()->accept(this, lvl + 4);
 }
 
 // FIXME: I'm not proud of the variable names here
@@ -532,15 +539,52 @@ void mml::type_checker::do_declaration_node(mml::declaration_node *const node,
   if (init) {
     init->accept(this, lvl + 2);
     if (node->type()) {
-      const auto &type_name = node->type()->name();
-      const auto &init_type_name = init->type()->name();
-      compatible_node_types(node->type(), init->type(), type_name, init_type_name,
-                            "initializer");
+      compatible_node_types(node->type(), init->type(), node->type()->name(), init->type()->name(), "initializer");
     } else
       node->type(init->type());
   }
-  const auto symbol = mml::make_symbol(node->type(), node->identifier(), (bool) node->init(), node->qualifier());
-  // TODO: redeclaration/definition of symbol logic
+
+  const auto new_symbol = mml::make_symbol(node->type(), node->identifier(), (bool) node->init(), node->qualifier());
+
+  if (!_symtab.insert(node->identifier(), new_symbol)) {
+    // in this case, we are redeclaring a variable
+    const auto previous_symbol = _symtab.find_local(node->identifier());
+    const auto new_symbol_type = new_symbol->type();
+    const auto previous_symbol_type = previous_symbol->type();
+    switch (new_symbol_type->name()) {
+    case cdk::TYPE_INT:
+    case cdk::TYPE_DOUBLE:
+    case cdk::TYPE_STRING:
+      if (new_symbol_type->name() == previous_symbol_type->name()) {
+        _symtab.replace(node->identifier(), new_symbol);
+        break;
+      }
+      [[fallthrough]];
+    case cdk::TYPE_POINTER:
+      if (previous_symbol_type->name() == cdk::TYPE_POINTER && compatible_ptr_types(new_symbol_type, previous_symbol_type)) {
+        _symtab.replace(node->identifier(), new_symbol);
+        break;
+      }
+      [[fallthrough]];
+    case cdk::TYPE_FUNCTIONAL:
+      if (
+        previous_symbol_type->name() == cdk::TYPE_FUNCTIONAL &&
+        compatible_fun_types(
+          cdk::functional_type::cast(new_symbol_type),
+          cdk::functional_type::cast(previous_symbol_type)
+        )
+      ) {
+        _symtab.replace(node->identifier(), new_symbol);
+        break;
+      }
+      [[fallthrough]];
+    default:
+      throw std::string("wrong redeclaration of variable " + node->identifier());
+    }
+  }
+  _parent->set_new_symbol(new_symbol);
+  if (node->qualifier() == tFOREIGN)
+    new_symbol->set_foreign();
 }
 
 //---------------------------------------------------------------------------
