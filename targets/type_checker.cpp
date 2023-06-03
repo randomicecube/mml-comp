@@ -669,10 +669,11 @@ void mml::type_checker::do_function_call_node(
     node->type(cdk::functional_type::cast(type)->output(0));
   }
 
-  if (args_types.size() != node->arguments()->size())
+  if (node->arguments() && args_types.size() != node->arguments()->size())
     throw std::string("wrong number of arguments in function call expression");
 
-  node->arguments()->accept(this, lvl + 2);
+  if (node->arguments())
+    node->arguments()->accept(this, lvl + 2);
   for (size_t i = 0; i < args_types.size(); i++) {
     const auto &param_type =
         dynamic_cast<cdk::expression_node *>(node->arguments()->node(i))

@@ -537,8 +537,6 @@ void mml::postfix_writer::do_declaration_node(mml::declaration_node *const node,
   ASSERT_SAFE_EXPRESSIONS;
   const auto id = node->identifier();
   const auto type_size = node->type()->size(); // size in bytes
-  std::cout << "[DEBUG -- POSTFIX] DECLARATION_NODE: type_size is " << type_size << std::endl;
-  std::cout << "[DEBUG -- POSTFIX] DECLARATION_NODE: id is " << id << std::endl;
   int offset = 0;
   
   // the offset represents the frame pointer, which always contains the previous
@@ -638,14 +636,12 @@ void mml::postfix_writer::processGlobalVariableInitialization(std::shared_ptr<mm
     case cdk::TYPE_FUNCTIONAL:
       // see last example in https://web.tecnico.ulisboa.pt/~david.matos/w/pt/index.php/Code_Generation#Basic_Structures_.28data.29
       _functions.push_back(symbol);
-      reset_new_symbol();
       initializer->accept(this, lvl + 2);
       _pf.DATA(); // Data segment, for global variables
       _pf.ALIGN();
-      if (symbol->qualifier() == tPUBLIC)
-        _pf.GLOBAL(symbol->name(), _pf.OBJ());
       _pf.LABEL(symbol->name());
-      _pf.SADDR(symbol->name());
+      _pf.SADDR(_currentBodyReturnLabel);
+      _currentBodyReturnLabel.clear();
       break;
     default:
       error(initializer->lineno(), "invalid type for variable initialization");
@@ -755,14 +751,16 @@ void mml::postfix_writer::do_function_call_node(
   }
 
   size_t args_size = 0; // size of all the arguments in bytes
-  for (int ax = node->arguments()->size() - 1; ax >= 0; ax--) {
-    auto arg = dynamic_cast<cdk::expression_node*>(node->arguments()->node(ax));
-    arg->accept(this, lvl + 2);
-    if (arg_types[ax]->name() == cdk::TYPE_DOUBLE && arg->type()->name() == cdk::TYPE_INT) {
-      args_size += 4; // if we're passing an integer where a double is expected, we need to allocate 4 additional bytes
-      _pf.I2D();      // also need to convert integer to double
+  if (node->arguments()) {
+    for (int ax = node->arguments()->size() - 1; ax >= 0; ax--) {
+      auto arg = dynamic_cast<cdk::expression_node*>(node->arguments()->node(ax));
+      arg->accept(this, lvl + 2);
+      if (arg_types[ax]->name() == cdk::TYPE_DOUBLE && arg->type()->name() == cdk::TYPE_INT) {
+        args_size += 4; // if we're passing an integer where a double is expected, we need to allocate 4 additional bytes
+        _pf.I2D();      // also need to convert integer to double
+      }
+      args_size += arg->type()->size();
     }
-    args_size += arg->type()->size();
   }
 
   // there are 3 cases now: we may want to do a recursive, non-recursive "regular", or forwarded call
@@ -772,7 +770,7 @@ void mml::postfix_writer::do_function_call_node(
     // if we accept a forwarded function, the label will once again be set
     node->function()->accept(this, lvl + 2);
     if (_currentForwardLabel.empty()) // it's a "regular" non-recursive call
-      _pf.BRANCH();
+        _pf.BRANCH();
     else // it's a forwarded call
       _pf.CALL(_currentForwardLabel);
   } else {
@@ -785,11 +783,12 @@ void mml::postfix_writer::do_function_call_node(
     _pf.TRASH(args_size); // removes no-longer-needed arguments from the stack
   
   switch (node->type()->name()) {
+  case cdk::TYPE_VOID:
+    break;
   case cdk::TYPE_INT:
   case cdk::TYPE_STRING:
   case cdk::TYPE_POINTER:
   case cdk::TYPE_FUNCTIONAL:
-  case cdk::TYPE_VOID:
     _pf.LDFVAL32();
     break;
   case cdk::TYPE_DOUBLE:
@@ -840,8 +839,9 @@ void mml::postfix_writer::processMainFunction(
 
   // compute stack size to be reserved for local variables
   frame_size_calculator fsc(_compiler, _symtab, main);
+  _symtab.push(); // entering new context
   node->accept(&fsc, lvl);
-
+  _symtab.pop(); // leaving context
   _pf.ENTER(fsc.localsize());
 
   _inFunctionBody = true;
@@ -864,13 +864,13 @@ void mml::postfix_writer::processMainFunction(
 }
 void mml::postfix_writer::processNonMainFunction(
     mml::function_definition_node *const node, int lvl) {
+  _currentBodyReturnLabel = mklbl(++_lbl);
+
   auto function = new_symbol();
   if (function) {
     _functions.push_back(function);
     reset_new_symbol();
   }
-
-  _currentBodyReturnLabel = mklbl(++_lbl);
 
   _offset = 8; // prepare for arguments (4: remember to account for return address)
   _symtab.push(); // args scope
@@ -888,19 +888,20 @@ void mml::postfix_writer::processNonMainFunction(
 
   _pf.TEXT(_currentBodyReturnLabel);
   _pf.ALIGN();
-  // FIXME: is it needed to set the function as global?
-  _pf.GLOBAL(_currentBodyReturnLabel, _pf.FUNC());
   _pf.LABEL(_currentBodyReturnLabel);
 
   // compute stack size to be reserved for local variables
   frame_size_calculator fsc(_compiler, _symtab, function);
-  node->block()->accept(this, lvl + 2);
+  _symtab.push(); // entering locals scope
+  node->accept(&fsc, lvl);
+  _symtab.pop(); // leaving locals scope
   _pf.ENTER(fsc.localsize());
 
   _offset = 0; // reset offset, prepare for local variables
   auto _previouslyInFunctionBody = _inFunctionBody;
   _inFunctionBody = true;
-  node->block()->accept(this, lvl + 2);
+  if (node->block())
+    node->block()->accept(this, lvl + 2);
   _inFunctionBody = _previouslyInFunctionBody;
   _symtab.pop(); // leaving args scope
 
@@ -912,4 +913,9 @@ void mml::postfix_writer::processNonMainFunction(
 
   if (function)
     _functions.pop_back();
+  
+  if (_inFunctionBody) {
+    _pf.TEXT(_functions.back()->name());
+    _pf.ADDR(_currentBodyReturnLabel);
+  }
 }
