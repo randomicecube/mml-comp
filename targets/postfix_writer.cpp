@@ -242,12 +242,17 @@ void mml::postfix_writer::do_mod_node(cdk::mod_node *const node, int lvl) {
 void mml::postfix_writer::processGeneralLogicalBinaryExpression(cdk::binary_operation_node *const node, int lvl) {
   ASSERT_SAFE_EXPRESSIONS;
   node->left()->accept(this, lvl + 2);
-  if (node->left()->is_typed(cdk::TYPE_INT) && node->right()->is_typed(cdk::TYPE_DOUBLE))
+  if (node->left()->is_typed(cdk::TYPE_DOUBLE) && node->right()->is_typed(cdk::TYPE_INT))
     _pf.I2D();
   
   node->right()->accept(this, lvl + 2);
-  if (node->right()->is_typed(cdk::TYPE_INT) && node->left()->is_typed(cdk::TYPE_DOUBLE))
+  if (node->right()->is_typed(cdk::TYPE_DOUBLE) && node->left()->is_typed(cdk::TYPE_INT))
     _pf.I2D();
+  
+  if (node->left()->is_typed(cdk::TYPE_DOUBLE) || node->right()->is_typed(cdk::TYPE_DOUBLE)) {
+    _pf.DCMP();
+    _pf.INT(0);
+  }
 }
 void mml::postfix_writer::do_lt_node(cdk::lt_node *const node, int lvl) {
   std::cout << "[DEBUG -- POSTFIX] Entering node: LT_NODE" << std::endl;
@@ -296,7 +301,7 @@ void mml::postfix_writer::do_variable_node(cdk::variable_node *const node,
   const auto symbol = _symtab.find(id);
   // a symbol may be global, local, or forwarded from another module
   if (symbol->is_global())
-    _pf.ADDR(node->name());
+    _pf.ADDR(symbol->name());
   else if (symbol->is_foreign())
     // if it's been forwarded, we won't branch to it, but rather call it;
     // as such, we'll needs its label (note that this'll be useful in
@@ -312,11 +317,10 @@ void mml::postfix_writer::do_rvalue_node(cdk::rvalue_node *const node,
   std::cout << "[DEBUG -- POSTFIX] Entering node: RVALUE_NODE" << std::endl;
   ASSERT_SAFE_EXPRESSIONS;
   node->lvalue()->accept(this, lvl);
-  if (node->type()->name() == cdk::TYPE_DOUBLE) {
+  if (node->is_typed(cdk::TYPE_DOUBLE)) {
     _pf.LDDOUBLE();
   } else {
     // integers, pointers, strings, functionals
-
     // note that if we're dealing with forwarded methods, we don't want to
     // branch to them, and as such, loading its first instruction address
     // is irrelevant (as we'll just call it by its label)
@@ -331,8 +335,8 @@ void mml::postfix_writer::do_assignment_node(cdk::assignment_node *const node,
   std::cout << "[DEBUG -- POSTFIX] Entering node: ASSIGNMENT_NODE" << std::endl;
   ASSERT_SAFE_EXPRESSIONS;
   node->rvalue()->accept(this, lvl + 2);
-  if (node->type()->name() == cdk::TYPE_DOUBLE) {
-    if (node->rvalue()->type()->name() == cdk::TYPE_INT)
+  if (node->is_typed(cdk::TYPE_DOUBLE)) {
+    if (node->rvalue()->is_typed(cdk::TYPE_INT))
       _pf.I2D();
     _pf.DUP64();
   } else {
@@ -340,7 +344,7 @@ void mml::postfix_writer::do_assignment_node(cdk::assignment_node *const node,
   }
 
   node->lvalue()->accept(this, lvl + 2);
-  if (node->type()->name() == cdk::TYPE_DOUBLE)
+  if (node->is_typed(cdk::TYPE_DOUBLE))
     _pf.STDOUBLE();
   else
     _pf.STINT();
@@ -452,20 +456,17 @@ void mml::postfix_writer::do_if_else_node(mml::if_else_node *const node,
 
 void mml::postfix_writer::do_stop_node(mml::stop_node *const node, int lvl) {
   std::cout << "[DEBUG -- POSTFIX] Entering node: STOP_NODE" << std::endl;
-  if (_whileCond.size() == 0) {
+  const auto whileLabels = _whileCond.size();
+  if (whileLabels == 0) {
     error(node->lineno(), "stop node found outside a while block");
     return;
   }
   const size_t stopLvl = (size_t) node->level();
-
-  // if stopLvl equals 1, we go to the topmost while end label.
-  // otherwise, we go to the stopLvl-th while end label
-  // we also need to check if the stopLvl-th while end label even exists
-  if (stopLvl > _whileEnd.size() || stopLvl < 1) {
+  if (stopLvl > whileLabels || stopLvl < 1) {
     error(node->lineno(), "invalid stop level");
     return;
   }
-  const auto whileEndLbl = _whileEnd[stopLvl - 1];
+  const auto whileEndLbl = _whileEnd[whileLabels - stopLvl];
   _pf.JMP(mklbl(whileEndLbl));
   std::cout << "[DEBUG -- POSTFIX] Leaving node: STOP_NODE" << std::endl;
 }
@@ -474,20 +475,17 @@ void mml::postfix_writer::do_stop_node(mml::stop_node *const node, int lvl) {
 
 void mml::postfix_writer::do_next_node(mml::next_node *const node, int lvl) {
   std::cout << "[DEBUG -- POSTFIX] Entering node: NEXT_NODE" << std::endl;
-  if (_whileCond.size() == 0) {
+  const auto whileLabels = _whileCond.size();
+  if (whileLabels == 0) {
     error(node->lineno(), "next node found outside a while block");
     return;
   }
   const size_t nextLvl = (size_t) node->level();
-
-  // if nextLvl equals 1, we go to the topmost while condition label.
-  // otherwise, we go to the nextLvl-th while condition label
-  // we also need to check if the nextLvl-th while condition label even exists
-  if (nextLvl > _whileCond.size() || nextLvl < 1) {
+  if (nextLvl > whileLabels || nextLvl < 1) {
     error(node->lineno(), "invalid next level");
     return;
   }
-  const auto whileCondLbl = _whileCond[nextLvl - 1];
+  const auto whileCondLbl = _whileCond[whileLabels - nextLvl];
   _pf.JMP(mklbl(whileCondLbl));
   std::cout << "[DEBUG -- POSTFIX] Leaving node: NEXT_NODE" << std::endl;
 }
@@ -539,6 +537,8 @@ void mml::postfix_writer::do_declaration_node(mml::declaration_node *const node,
   ASSERT_SAFE_EXPRESSIONS;
   const auto id = node->identifier();
   const auto type_size = node->type()->size(); // size in bytes
+  std::cout << "[DEBUG -- POSTFIX] DECLARATION_NODE: type_size is " << type_size << std::endl;
+  std::cout << "[DEBUG -- POSTFIX] DECLARATION_NODE: id is " << id << std::endl;
   int offset = 0;
   
   // the offset represents the frame pointer, which always contains the previous
@@ -556,6 +556,7 @@ void mml::postfix_writer::do_declaration_node(mml::declaration_node *const node,
   } else if (_inFunctionBody) {
     // the function's local variables are placed in the stack by the callee
     _offset -= type_size;
+    std::cout << "[DEBUG -- POSTFIX] DECLARATION_NODE: _offset is " << _offset << std::endl;
     offset = _offset;
   }
 
@@ -576,12 +577,12 @@ void mml::postfix_writer::do_declaration_node(mml::declaration_node *const node,
       processLocalVariableInitialization(symbol, node->init(), lvl);
     else
       processGlobalVariableInitialization(symbol, node->init(), lvl);
-    _symbolsToDeclare.erase(symbol->name());
   }
+  _symbolsToDeclare.erase(symbol->name());
   std::cout << "[DEBUG -- POSTFIX] Leaving node: DECLARATION_NODE" << std::endl;
 }
 void mml::postfix_writer::processLocalVariableInitialization(std::shared_ptr<mml::symbol> symbol, cdk::expression_node *const initializer, int lvl) {
-  initializer->accept(this, lvl + 2);
+  initializer->accept(this, lvl);
   switch (symbol->type()->name()) {
     case cdk::TYPE_INT:
     case cdk::TYPE_STRING:
@@ -839,6 +840,7 @@ void mml::postfix_writer::processMainFunction(
 
   // compute stack size to be reserved for local variables
   frame_size_calculator fsc(_compiler, _symtab, main);
+  node->accept(&fsc, lvl);
 
   _pf.ENTER(fsc.localsize());
 
