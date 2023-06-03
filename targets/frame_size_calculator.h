@@ -13,23 +13,19 @@ class frame_size_calculator : public basic_ast_visitor {
   std::shared_ptr<mml::symbol> _function;
 
   size_t _localsize;
-  size_t _retsize;
-  bool _ret;
 
 public:
   frame_size_calculator(std::shared_ptr<cdk::compiler> compiler,
                         cdk::symbol_table<mml::symbol> &symtab,
                         std::shared_ptr<mml::symbol> func)
       : basic_ast_visitor(compiler), _symtab(symtab), _function(func),
-        _localsize(0), _retsize(0), _ret(false) {}
+        _localsize(0) {}
 
 public:
   ~frame_size_calculator();
 
 public:
   size_t localsize() const { return _localsize; }
-
-  size_t retsize() const { return _retsize; }
 
 public:
   // do not edit these lines

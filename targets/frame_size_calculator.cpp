@@ -150,8 +150,10 @@ void mml::frame_size_calculator::do_sequence_node(
     cdk::sequence_node *const node, int lvl) {
   for (size_t i = 0; i < node->size(); i++) {
     auto child = node->node(i);
-    if (child != nullptr)
-      child->accept(this, lvl + 2);
+    if (child == nullptr) {
+      break;
+    }
+    child->accept(this, lvl + 2);
   }
 }
 void mml::frame_size_calculator::do_block_node(mml::block_node *const node,
