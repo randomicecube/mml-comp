@@ -20,7 +20,7 @@ bool mml::type_checker::check_compatible_ptr_types(std::shared_ptr<cdk::basic_ty
     t1_ptr = cdk::reference_type::cast(t1_ptr)->referenced();
     t2_ptr = cdk::reference_type::cast(t2_ptr)->referenced();
   }
-  return t2_ptr == nullptr || t1_ptr->name() == t2_ptr->name();
+  return t2 == nullptr || t1_ptr->name() == t2_ptr->name() || t2_ptr->name() == cdk::TYPE_UNSPEC;
 }
 
 bool mml::type_checker::check_compatible_fun_types(std::shared_ptr<cdk::functional_type> t1,
@@ -80,9 +80,8 @@ void mml::type_checker::throw_incompatible_types(std::shared_ptr<cdk::basic_type
                            bool is_return) {
   const auto t1_name = t1->name();
   const auto t2_name = t2->name();
-  std::shared_ptr<cdk::functional_type> fun_t_node;
-  std::shared_ptr<cdk::functional_type> fun_t_field;
-  std::shared_ptr<cdk::basic_type> ref_t_field;
+  std::shared_ptr<cdk::functional_type> fun_t1;
+  std::shared_ptr<cdk::functional_type> fun_t2;
   const std::string field_name = is_return ? "return" : "initialization"; // hacky
 
   switch (t1_name) {
@@ -105,12 +104,12 @@ void mml::type_checker::throw_incompatible_types(std::shared_ptr<cdk::basic_type
       throw std::string("wrong type in " + field_name + " (expected pointer)");
     break;
   case cdk::TYPE_FUNCTIONAL:
-    fun_t_node = cdk::functional_type::cast(t1);
-    fun_t_field = cdk::functional_type::cast(t2);
-    if (
-      (t2_name == cdk::TYPE_FUNCTIONAL && !check_compatible_fun_types(fun_t_node, fun_t_field)) ||
+    fun_t1 = cdk::functional_type::cast(t1);
+    fun_t2 = cdk::functional_type::cast(t2);
+    if (!(
+      (t2_name == cdk::TYPE_FUNCTIONAL && check_compatible_fun_types(fun_t1, fun_t2)) ||
       (t2_name == cdk::TYPE_POINTER && cdk::reference_type::cast(t2)->referenced() == nullptr) // f = null
-    )
+    ))
       throw std::string("wrong type in " + field_name + " (expected function)");
     break;
   default:
@@ -359,13 +358,13 @@ void mml::type_checker::do_assignment_node(cdk::assignment_node *const node,
   const auto lval_type_name = lval_type->name();
   const auto rval_type_name = rval_type->name();
 
-  const auto fun_lval_type = cdk::functional_type::cast(lval_type);
-  const auto fun_rval_type = cdk::functional_type::cast(rval_type);
-
   const auto int_type = cdk::primitive_type::create(4, cdk::TYPE_INT);
   const auto double_type = cdk::primitive_type::create(8, cdk::TYPE_DOUBLE);
   const auto string_type = cdk::primitive_type::create(4, cdk::TYPE_STRING);
   const auto error_type = cdk::primitive_type::create(0, cdk::TYPE_ERROR);
+
+  std::shared_ptr<cdk::functional_type> fun_lval_type;
+  std::shared_ptr<cdk::functional_type> fun_rval_type;
 
   switch (lval_type_name) {
   case cdk::TYPE_INT:
@@ -413,7 +412,8 @@ void mml::type_checker::do_assignment_node(cdk::assignment_node *const node,
     case cdk::TYPE_POINTER:
       if (!check_compatible_ptr_types(lval_type, rval_type))
         throw std::string("wrong assignment to pointer");
-      node->type(rval_type);
+      node->type(lval_type);
+      node->rvalue()->type(lval_type);
       return;
     case cdk::TYPE_UNSPEC: // auto-cast
       node->type(error_type);
@@ -423,6 +423,8 @@ void mml::type_checker::do_assignment_node(cdk::assignment_node *const node,
       throw std::string("wrong assignment to pointer");
     }
   case cdk::TYPE_FUNCTIONAL:
+    fun_lval_type = cdk::functional_type::cast(lval_type);
+    fun_rval_type = cdk::functional_type::cast(rval_type);
     switch (rval_type_name) {
     case cdk::TYPE_FUNCTIONAL:
       if (!check_compatible_fun_types(fun_lval_type, fun_rval_type))
@@ -519,9 +521,7 @@ void mml::type_checker::do_return_node(mml::return_node *const node, int lvl) {
 void mml::type_checker::do_nullptr_node(mml::nullptr_node *const node,
                                         int lvl) {
   ASSERT_UNSPEC;
-  // TODO: check if this is correct;; in MML, expressions are always int
-  node->type(cdk::reference_type::create(
-      4, cdk::primitive_type::create(4, cdk::TYPE_INT)));
+  node->type(cdk::reference_type::create(4, nullptr));
 }
 
 //---------------------------------------------------------------------------
@@ -631,10 +631,7 @@ void mml::type_checker::do_stack_alloc_node(mml::stack_alloc_node *const node,
   node->argument()->accept(this, lvl + 2);
   if (!node->argument()->is_typed(cdk::TYPE_INT))
     throw std::string("wrong type in argument of stack_alloc expression");
-  node->type(
-      // TODO: check if this is correct;; in MML, expressions are always int
-      cdk::reference_type::create(
-          4, cdk::primitive_type::create(4, cdk::TYPE_INT)));
+  node->type(cdk::reference_type::create(4, cdk::primitive_type::create(0, cdk::TYPE_UNSPEC)));
 }
 
 //---------------------------------------------------------------------------
