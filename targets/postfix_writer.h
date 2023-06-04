@@ -31,10 +31,8 @@ class postfix_writer : public basic_ast_visitor {
   // while labels -- for break/continue; work like stacks
   std::vector<lbl> _whileCond, _whileEnd;
 
-  // remember function name for resolving '@'
-  std::string _currentFunctionName;
   // where to jump when a return occurs or an exclusive section ends
-  std::string _currentBodyReturnLabel;
+  std::vector<std::string> _bodyReturnLabels;
   // a given forwarded function's label, as we want to call it, not branch to it
   std::string _currentForwardLabel;
   // for keeping track of functions and their arguments

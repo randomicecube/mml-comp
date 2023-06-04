@@ -235,7 +235,12 @@ void mml::type_checker::do_next_node(mml::next_node *const node, int lvl) {
   // EMPTY
 }
 void mml::type_checker::do_block_node(mml::block_node *const node, int lvl) {
-  // EMPTY
+  _symtab.push();
+  if (node->declarations())
+    node->declarations()->accept(this, lvl + 2);
+  if (node->instructions())
+    node->instructions()->accept(this, lvl + 2);
+  _symtab.pop();
 }
 
 //---------------------------------------------------------------------------
@@ -706,6 +711,7 @@ void mml::type_checker::do_function_definition_node(
     } else {
       _symtab.insert(main_at->name(), main);
     }
+    node->block()->accept(this, lvl + 2); // TODO: check if this is right
     _parent->set_new_symbol(main);
     return;
   }
@@ -717,5 +723,9 @@ void mml::type_checker::do_function_definition_node(
   } else {
     _symtab.insert(function->name(), function);
   }
+  for (const auto &arg : node->arguments()->nodes()) {
+    arg->accept(this, lvl + 2);
+  }
+  node->block()->accept(this, lvl + 2); // TODO: check if this is right
   _parent->set_new_symbol(function);
 }

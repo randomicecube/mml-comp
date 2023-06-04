@@ -184,12 +184,11 @@ void mml::postfix_writer::do_sub_node(cdk::sub_node *const node, int lvl) {
   else {
     _pf.SUB();
     // pointer - pointer requires a special treatment
-    const auto ref_left = cdk::reference_type::cast(node->left()->type())->referenced();
     if (
       (node->left()->is_typed(cdk::TYPE_POINTER) && node->right()->is_typed(cdk::TYPE_POINTER)) &&
-      ref_left->name() != cdk::TYPE_VOID
+      cdk::reference_type::cast(node->left()->type())->referenced()->name() != cdk::TYPE_VOID
     ) {
-      _pf.INT(ref_left->size());
+      _pf.INT(cdk::reference_type::cast(node->left()->type())->referenced()->size());
       _pf.DIV();
     }
   }
@@ -554,7 +553,6 @@ void mml::postfix_writer::do_declaration_node(mml::declaration_node *const node,
   } else if (_inFunctionBody) {
     // the function's local variables are placed in the stack by the callee
     _offset -= type_size;
-    std::cout << "[DEBUG -- POSTFIX] DECLARATION_NODE: _offset is " << _offset << std::endl;
     offset = _offset;
   }
 
@@ -575,8 +573,8 @@ void mml::postfix_writer::do_declaration_node(mml::declaration_node *const node,
       processLocalVariableInitialization(symbol, node->init(), lvl);
     else
       processGlobalVariableInitialization(symbol, node->init(), lvl);
+    _symbolsToDeclare.erase(symbol->name());
   }
-  _symbolsToDeclare.erase(symbol->name());
   std::cout << "[DEBUG -- POSTFIX] Leaving node: DECLARATION_NODE" << std::endl;
 }
 void mml::postfix_writer::processLocalVariableInitialization(std::shared_ptr<mml::symbol> symbol, cdk::expression_node *const initializer, int lvl) {
@@ -635,15 +633,16 @@ void mml::postfix_writer::processGlobalVariableInitialization(std::shared_ptr<mm
       break;
     case cdk::TYPE_FUNCTIONAL:
       // see last example in https://web.tecnico.ulisboa.pt/~david.matos/w/pt/index.php/Code_Generation#Basic_Structures_.28data.29
+      std::cout << "[DEBUG -- POSTFIX] Function declaration: " << symbol->name() << std::endl;
       _functions.push_back(symbol);
-      initializer->accept(this, lvl + 2);
+      initializer->accept(this, lvl);
       _pf.DATA(); // Data segment, for global variables
       _pf.ALIGN();
-      if (symbol->qualifier() == tPUBLIC)
+      if (symbol->qualifier() == tPUBLIC) // TODO: is this needed?
         _pf.GLOBAL(symbol->name(), _pf.OBJ());
       _pf.LABEL(symbol->name());
-      _pf.SADDR(_currentBodyReturnLabel);
-      _currentBodyReturnLabel.clear();
+      _pf.SADDR(_bodyReturnLabels.back());
+      _bodyReturnLabels.pop_back();
       break;
     default:
       error(initializer->lineno(), "invalid type for variable initialization");
@@ -742,9 +741,10 @@ void mml::postfix_writer::do_function_call_node(
   std::cout << "[DEBUG -- POSTFIX] Entering node: FUNCTION_CALL_NODE" << std::endl;
   ASSERT_SAFE_EXPRESSIONS;
   std::vector<std::shared_ptr<cdk::basic_type>> arg_types;
-  if (node->function())
+  const auto function = node->function();
+  if (function)
     // in non recursive calls, the arguments are already stored in the node itself
-    arg_types = cdk::functional_type::cast(node->function()->type())->input()->components();
+    arg_types = cdk::functional_type::cast(function->type())->input()->components();
   else {
     // in recursive calls, we'll want to fetch the symbol associated with
     // the deepest function we can find, and retrieve its arguments
@@ -766,19 +766,18 @@ void mml::postfix_writer::do_function_call_node(
   }
 
   // there are 3 cases now: we may want to do a recursive, non-recursive "regular", or forwarded call
-  if (node->function()) {
+  if (function) {
     // non-recursive calls
     _currentForwardLabel.clear();
     // if we accept a forwarded function, the label will once again be set
-    node->function()->accept(this, lvl + 2);
+    function->accept(this, lvl + 2);
     if (_currentForwardLabel.empty()) // it's a "regular" non-recursive call
         _pf.BRANCH();
     else // it's a forwarded call
       _pf.CALL(_currentForwardLabel);
   } else {
     // recursive calls
-    // TODO: check if this works
-    _pf.CALL(_functions.back()->name());
+    _pf.CALL(_bodyReturnLabels.back());
   }
 
   if (args_size > 0)
@@ -847,6 +846,8 @@ void mml::postfix_writer::processMainFunction(
   _pf.ENTER(fsc.localsize());
 
   _inFunctionBody = true;
+  const bool _previous_return_seen = _returnSeen;
+  _returnSeen = false;
   node->block()->accept(this, lvl + 2);
   _inFunctionBody = false;
 
@@ -862,7 +863,7 @@ void mml::postfix_writer::processMainFunction(
   _functions.pop_back();
   for (auto forwarded_function: _functionsToDeclare)
     _pf.EXTERN(forwarded_function);
-  _returnSeen = false;
+  _returnSeen = _previous_return_seen;
 }
 void mml::postfix_writer::processNonMainFunction(
     mml::function_definition_node *const node, int lvl) {
@@ -886,10 +887,11 @@ void mml::postfix_writer::processNonMainFunction(
     _inFunctionArgs = false;
   }
 
-  _currentBodyReturnLabel = mklbl(++_lbl);
-  _pf.TEXT(_currentBodyReturnLabel);
+  const auto currentBodyReturnLabel = mklbl(++_lbl);
+  _bodyReturnLabels.push_back(currentBodyReturnLabel);
+  _pf.TEXT(currentBodyReturnLabel);
   _pf.ALIGN();
-  _pf.LABEL(_currentBodyReturnLabel);
+  _pf.LABEL(currentBodyReturnLabel);
 
   // compute stack size to be reserved for local variables
   frame_size_calculator fsc(_compiler, _symtab, function);
@@ -906,6 +908,13 @@ void mml::postfix_writer::processNonMainFunction(
   _inFunctionBody = _previouslyInFunctionBody;
   _symtab.pop(); // leaving args scope
 
+  // TODO: fix this, in some scenarios we have LEAVE/RET twice
+  // I don't know how to avoid this, as if we used the returnSeen flag,
+  // we could be missing a LEAVE/RET pair, such as in the example below
+  // void f = (int i) => { if (i == 0) { return; } };
+  // here, we have a return statement, but it's inside an if; the returnSeen flag
+  // would be set to true, but we would never generate the LEAVE/RET pair if
+  // the if condition evaluated to false
   _pf.LEAVE();
   _pf.RET();
 
@@ -914,6 +923,6 @@ void mml::postfix_writer::processNonMainFunction(
   
   if (_inFunctionBody) {
     _pf.TEXT(_functions.back()->name());
-    _pf.ADDR(_currentBodyReturnLabel);
+    _pf.ADDR(currentBodyReturnLabel);
   }
 }
