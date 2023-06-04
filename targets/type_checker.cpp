@@ -47,9 +47,6 @@ bool mml::type_checker::check_compatible_types(std::shared_ptr<cdk::basic_type> 
 
   switch (t1_name) {
   case cdk::TYPE_INT:
-    if (t2_name != cdk::TYPE_INT)
-      return false;
-    break;
   case cdk::TYPE_DOUBLE:
     if (!(t2_name == cdk::TYPE_DOUBLE || t2_name == cdk::TYPE_INT))
       return false;
