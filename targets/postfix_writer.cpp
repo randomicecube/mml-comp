@@ -34,7 +34,6 @@ void mml::postfix_writer::do_integer_node(cdk::integer_node *const node,
 void mml::postfix_writer::do_double_node(cdk::double_node *const node,
                                          int lvl) {
   std::cout << "[DEBUG -- POSTFIX] Entering node: DOUBLE_NODE" << std::endl;
-  // FIXME: this may need more stuff
   if (_inFunctionBody) {
     _pf.DOUBLE(node->value());     // load number to the stack
   } else {
@@ -55,7 +54,10 @@ void mml::postfix_writer::do_string_node(cdk::string_node *const node,
 
   if (_inFunctionBody) {
     // local variable initializer
-    _pf.TEXT();                    // return to the TEXT segment
+    // NOTE: both here and in function definitions, when we enter
+    // other segments, we still need to be able to come back to our previous
+    // label (instead of a random text segment)
+    _pf.TEXT(_bodyReturnLabels.back());                    // return to the TEXT segment
     _pf.ADDR(lbl);                 // the string to be printed
   } else {
     // global variable initializer
@@ -150,7 +152,7 @@ void mml::postfix_writer::processIDPBinaryExpression(cdk::binary_operation_node 
   if (node->is_typed(cdk::TYPE_DOUBLE) && node->left()->is_typed(cdk::TYPE_INT))
     _pf.I2D();
   else if (node->is_typed(cdk::TYPE_POINTER) && node->left()->is_typed(cdk::TYPE_INT)) {
-    const auto ref_left = cdk::reference_type::cast(node->left()->type())->referenced();
+    const auto ref_left = cdk::reference_type::cast(node->right()->type())->referenced();
     _pf.INT(ref_left->size());
     _pf.MUL();
   }
@@ -159,7 +161,7 @@ void mml::postfix_writer::processIDPBinaryExpression(cdk::binary_operation_node 
   if (node->is_typed(cdk::TYPE_DOUBLE) && node->right()->is_typed(cdk::TYPE_INT))
     _pf.I2D();
   else if (node->is_typed(cdk::TYPE_POINTER) && node->right()->is_typed(cdk::TYPE_INT)) {
-    const auto ref_right = cdk::reference_type::cast(node->right()->type())->referenced();
+    const auto ref_right = cdk::reference_type::cast(node->left()->type())->referenced();
     _pf.INT(ref_right->size());
     _pf.MUL();
   }
@@ -299,13 +301,15 @@ void mml::postfix_writer::do_variable_node(cdk::variable_node *const node,
   const auto &id = node->name();
   const auto symbol = _symtab.find(id);
   // a symbol may be global, local, or forwarded from another module
-  if (symbol->is_global())
-    _pf.ADDR(symbol->name());
-  else if (symbol->is_foreign())
+  // note how we want to check if it's foreign before if it's global,
+  // as otherwise we wouldn't be CALLing it, but rather branching to it
+  if (symbol->is_foreign())
     // if it's been forwarded, we won't branch to it, but rather call it;
     // as such, we'll needs its label (note that this'll be useful in
     // function calls)
     _currentForwardLabel = symbol->name();
+  else if (symbol->is_global())
+    _pf.ADDR(symbol->name());
   else
     _pf.LOCAL(symbol->offset());
   std::cout << "[DEBUG -- POSTFIX] Leaving node: VARIABLE_NODE" << std::endl;
@@ -506,17 +510,15 @@ void mml::postfix_writer::do_return_node(mml::return_node *const node,
     node->retval()->accept(this, lvl + 2);
     switch (current_function_type_name) {
     case cdk::TYPE_INT:
+    case cdk::TYPE_STRING:
+    case cdk::TYPE_POINTER:
+    case cdk::TYPE_FUNCTIONAL:
       _pf.STFVAL32(); // removes 4 bytes (an int) from the stack
       break;
     case cdk::TYPE_DOUBLE:
       if (node->retval()->is_typed(cdk::TYPE_INT))
         _pf.I2D(); // converts int to double
       _pf.STFVAL64(); // removes 8 bytes (a double) from the stack
-      break;
-    case cdk::TYPE_STRING:
-    case cdk::TYPE_POINTER:
-    case cdk::TYPE_FUNCTIONAL:
-      _pf.STFVAL32(); // removes 4 bytes from the stack
       break;
     default:
       error(node->lineno(), "invalid return type");
@@ -633,7 +635,6 @@ void mml::postfix_writer::processGlobalVariableInitialization(std::shared_ptr<mm
       break;
     case cdk::TYPE_FUNCTIONAL:
       // see last example in https://web.tecnico.ulisboa.pt/~david.matos/w/pt/index.php/Code_Generation#Basic_Structures_.28data.29
-      std::cout << "[DEBUG -- POSTFIX] Function declaration: " << symbol->name() << std::endl;
       _functions.push_back(symbol);
       initializer->accept(this, lvl);
       _pf.DATA(); // Data segment, for global variables
@@ -830,10 +831,11 @@ void mml::postfix_writer::processMainFunction(
   auto main = new_symbol();
   _functions.push_back(main);
   reset_new_symbol();
+  _bodyReturnLabels.push_back("_main");
 
   // generate the main function itself
   _symtab.push(); // entering new context
-  _pf.TEXT();
+  _pf.TEXT(_bodyReturnLabels.back());
   _pf.ALIGN();
   _pf.GLOBAL("_main", _pf.FUNC());
   _pf.LABEL("_main");
