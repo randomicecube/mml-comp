@@ -427,11 +427,11 @@ void mml::postfix_writer::do_while_node(mml::while_node *const node, int lvl) {
 void mml::postfix_writer::do_if_node(mml::if_node *const node, int lvl) {
   std::cout << "[DEBUG -- POSTFIX] Entering node: IF_NODE" << std::endl;
   ASSERT_SAFE_EXPRESSIONS;
-  int lbl1;
+  int lbl = ++_lbl;
   node->condition()->accept(this, lvl);
-  _pf.JZ(mklbl(lbl1 = ++_lbl));
+  _pf.JZ(mklbl(lbl));
   node->block()->accept(this, lvl + 2);
-  _pf.LABEL(mklbl(lbl1));
+  _pf.LABEL(mklbl(lbl));
   std::cout << "[DEBUG -- POSTFIX] Leaving node: IF_NODE" << std::endl;
 }
 
@@ -639,6 +639,8 @@ void mml::postfix_writer::processGlobalVariableInitialization(std::shared_ptr<mm
       initializer->accept(this, lvl + 2);
       _pf.DATA(); // Data segment, for global variables
       _pf.ALIGN();
+      if (symbol->qualifier() == tPUBLIC)
+        _pf.GLOBAL(symbol->name(), _pf.OBJ());
       _pf.LABEL(symbol->name());
       _pf.SADDR(_currentBodyReturnLabel);
       _currentBodyReturnLabel.clear();
@@ -864,8 +866,6 @@ void mml::postfix_writer::processMainFunction(
 }
 void mml::postfix_writer::processNonMainFunction(
     mml::function_definition_node *const node, int lvl) {
-  _currentBodyReturnLabel = mklbl(++_lbl);
-
   auto function = new_symbol();
   if (function) {
     _functions.push_back(function);
@@ -886,6 +886,7 @@ void mml::postfix_writer::processNonMainFunction(
     _inFunctionArgs = false;
   }
 
+  _currentBodyReturnLabel = mklbl(++_lbl);
   _pf.TEXT(_currentBodyReturnLabel);
   _pf.ALIGN();
   _pf.LABEL(_currentBodyReturnLabel);
@@ -905,11 +906,8 @@ void mml::postfix_writer::processNonMainFunction(
   _inFunctionBody = _previouslyInFunctionBody;
   _symtab.pop(); // leaving args scope
 
-  if (!_returnSeen) {
-    // for cases such as void functions
-    _pf.LEAVE();
-    _pf.RET();
-  }
+  _pf.LEAVE();
+  _pf.RET();
 
   if (function)
     _functions.pop_back();
