@@ -192,7 +192,6 @@ void mml::postfix_writer::do_add_node(cdk::add_node *const node, int lvl) {
 void mml::postfix_writer::do_sub_node(cdk::sub_node *const node, int lvl) {
   std::cout << "[DEBUG -- POSTFIX] Entering node: SUB_NODE" << std::endl;
   processIDPBinaryExpression(node, lvl);
-	// FIXME: missing pointer-pointer, where the result is the number if objects of the type pointed by them
 
   if (node->is_typed(cdk::TYPE_DOUBLE))
     _pf.DSUB();
@@ -667,10 +666,12 @@ void mml::postfix_writer::processGlobalVariableInitialization(std::shared_ptr<mm
 
 void mml::postfix_writer::do_block_node(mml::block_node *const node, int lvl) {
   std::cout << "[DEBUG -- POSTFIX] Entering node: BLOCK_NODE" << std::endl;
+  _symtab.push();
   if (node->declarations())
     node->declarations()->accept(this, lvl + 2);
   if (node->instructions())
     node->instructions()->accept(this, lvl + 2);
+  _symtab.pop();
   std::cout << "[DEBUG -- POSTFIX] Leaving node: BLOCK_NODE" << std::endl;
 }
 
@@ -839,10 +840,18 @@ void mml::postfix_writer::processMainFunction(
       _pf.SALLOC(symbol->type()->size());
     }            
   }
-
-  auto main = new_symbol();
+  const auto fun_int_type = cdk::functional_type::create(cdk::primitive_type::create(4, cdk::TYPE_INT));
+  // Note that it's ok to name the function _main, as no variable may have underscores
+  const auto main = mml::make_symbol(fun_int_type, "_main", 0, tPRIVATE);
+  main->set_main();
+  const auto main_at = mml::make_symbol(fun_int_type, "@", 0, tPRIVATE);
+  main_at->set_main();
+  if (_symtab.find_local(main_at->name())) {
+    _symtab.replace(main_at->name(), main);
+  } else {
+    _symtab.insert(main_at->name(), main);
+  }
   _functions.push_back(main);
-  reset_new_symbol();
   _bodyReturnLabels.push_back("_main");
 
   // generate the main function itself
@@ -852,12 +861,15 @@ void mml::postfix_writer::processMainFunction(
   _pf.GLOBAL("_main", _pf.FUNC());
   _pf.LABEL("_main");
 
+
   // compute stack size to be reserved for local variables
   frame_size_calculator fsc(_compiler, _symtab, main);
+  std::cout << "[DEBUG -- POSTFIX] Computing stack size for main function" << std::endl;
   _symtab.push(); // entering new context
   node->accept(&fsc, lvl);
   _symtab.pop(); // leaving context
   _pf.ENTER(fsc.localsize());
+  std::cout << "[DEBUG -- POSTFIX] Stack size for main function: " << fsc.localsize() << std::endl;
 
   _inFunctionBody = true;
   const bool _previous_return_seen = _returnSeen;
@@ -881,11 +893,13 @@ void mml::postfix_writer::processMainFunction(
 }
 void mml::postfix_writer::processNonMainFunction(
     mml::function_definition_node *const node, int lvl) {
-  auto function = new_symbol();
-  if (function) {
-    _functions.push_back(function);
-    reset_new_symbol();
+  auto function = make_symbol(node->type(), "@", 0, tPRIVATE);
+  if (_symtab.find_local(function->name())) {
+    _symtab.replace(function->name(), function);
+  } else {
+    _symtab.insert(function->name(), function);
   }
+  _functions.push_back(function);
 
   _offset = 8; // prepare for arguments (4: remember to account for return address)
   _symtab.push(); // args scope
@@ -909,9 +923,9 @@ void mml::postfix_writer::processNonMainFunction(
 
   // compute stack size to be reserved for local variables
   frame_size_calculator fsc(_compiler, _symtab, function);
-  _symtab.push(); // entering locals scope
+  _symtab.push();
   node->accept(&fsc, lvl);
-  _symtab.pop(); // leaving locals scope
+  _symtab.pop();
   _pf.ENTER(fsc.localsize());
 
   _offset = 0; // reset offset, prepare for local variables

@@ -37,4 +37,21 @@ public:
 
 } // namespace mml
 
+//---------------------------------------------------------------------------
+//     HELPER MACRO FOR TYPE CHECKING
+//---------------------------------------------------------------------------
+
+#define CHECK_TYPES(compiler, symtab, node)                                    \
+  {                                                                            \
+    try {                                                                      \
+      mml::type_checker checker(compiler, symtab, this);                       \
+      (node)->accept(&checker, 0);                                             \
+    } catch (const std::string &problem) {                                     \
+      std::cerr << (node)->lineno() << ": " << problem << std::endl;           \
+      return;                                                                  \
+    }                                                                          \
+  }
+
+#define ASSERT_SAFE_EXPRESSIONS CHECK_TYPES(_compiler, _symtab, node)
+
 #endif
