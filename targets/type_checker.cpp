@@ -484,7 +484,7 @@ void mml::type_checker::do_if_else_node(mml::if_else_node *const node,
 void mml::type_checker::do_return_node(mml::return_node *const node, int lvl) {
   const auto symbol = _symtab.find("@", 1);
   const auto ret_val = node->retval();
-  if (!symbol) { // a return may only be inside a function
+  if (!symbol) { // we may be in main
     const auto main = _symtab.find("_main", 0);
     if (main) {
       if (!ret_val)
@@ -504,13 +504,11 @@ void mml::type_checker::do_return_node(mml::return_node *const node, int lvl) {
   const bool has_output = fun_sym_type->output() != nullptr;
   if (has_output && output->name() == cdk::TYPE_VOID)
     throw std::string("return with a value in void function");
-
-  ret_val->accept(this, lvl + 2);
-  if (!has_output)
+  else if (!has_output)
     throw std::string("unknown return type in function");
 
-  const auto node_type = ret_val->type();
-  throw_incompatible_types(output, node_type);
+  ret_val->accept(this, lvl + 2);
+  throw_incompatible_types(output, ret_val->type());
 }
 
 //---------------------------------------------------------------------------
@@ -581,7 +579,6 @@ void mml::type_checker::do_declaration_node(mml::declaration_node *const node,
 
 void mml::type_checker::do_input_node(mml::input_node *const node, int lvl) {
   ASSERT_UNSPEC;
-  // TODO: check if this is correct;; in MML, expressions are always int
   node->type(cdk::primitive_type::create(0, cdk::TYPE_UNSPEC));
 }
 
@@ -656,8 +653,7 @@ void mml::type_checker::do_function_call_node(
     args_types = cdk::functional_type::cast(type)->input()->components();
     node->type(cdk::functional_type::cast(type)->output(0));
   } else { // recursive call (@)
-    auto symbol =
-        _symtab.find("@", 1); // looks at one level above for the symbol
+    auto symbol = _symtab.find("@", 1); // looks at one level above for the symbol
     if (!symbol)
       throw std::string("recursive call to undeclared function");
     else if (symbol->is_main())

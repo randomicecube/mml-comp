@@ -727,6 +727,7 @@ void mml::postfix_writer::do_index_node(mml::index_node *const node, int lvl) {
 void mml::postfix_writer::do_stack_alloc_node(mml::stack_alloc_node *const node,
                                               int lvl) {
   std::cout << "[DEBUG -- POSTFIX] Entering node: STACK_ALLOC_NODE" << std::endl;
+  ASSERT_SAFE_EXPRESSIONS;
   const auto ref = cdk::reference_type::cast(node->type())->referenced();
   node->argument()->accept(this, lvl);
   _pf.INT(ref->size()); // type size
