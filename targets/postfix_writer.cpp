@@ -667,12 +667,10 @@ void mml::postfix_writer::processGlobalVariableInitialization(std::shared_ptr<mm
 
 void mml::postfix_writer::do_block_node(mml::block_node *const node, int lvl) {
   std::cout << "[DEBUG -- POSTFIX] Entering node: BLOCK_NODE" << std::endl;
-  _symtab.push(); // entering new context, new symbol table for block-local vars
   if (node->declarations())
     node->declarations()->accept(this, lvl + 2);
   if (node->instructions())
     node->instructions()->accept(this, lvl + 2);
-  _symtab.pop(); // leaving current context
   std::cout << "[DEBUG -- POSTFIX] Leaving node: BLOCK_NODE" << std::endl;
 }
 

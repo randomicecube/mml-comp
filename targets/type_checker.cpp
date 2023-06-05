@@ -668,22 +668,21 @@ void mml::type_checker::do_function_call_node(
     node->type(cdk::functional_type::cast(type)->output(0));
   }
 
-  if (node->arguments() && args_types.size() != node->arguments()->size())
-    throw std::string("wrong number of arguments in function call expression");
-
-  if (node->arguments())
+  if (node->arguments()) {
+    if (args_types.size() != node->arguments()->size())
+      throw std::string("wrong number of arguments in function call expression");
     node->arguments()->accept(this, lvl + 2);
-  for (size_t i = 0; i < args_types.size(); i++) {
-    const auto &param_type =
-        dynamic_cast<cdk::expression_node *>(node->arguments()->node(i))
-            ->type();
-    // note that the second condition is to allow passing an int as a double
-    if (
-      (args_types[i] == param_type) ||
-      (args_types[i]->name() == cdk::TYPE_DOUBLE && param_type->name() == cdk::TYPE_INT)
-    )
-      continue;
-    throw std::string("wrong type in argument of function call expression");
+
+    for (size_t i = 0; i < args_types.size(); i++) {
+      const auto &param_type = dynamic_cast<cdk::expression_node *>(node->arguments()->node(i))->type();
+      // note that the second condition is to allow passing an int as a double
+      if (
+        (args_types[i] == param_type) ||
+        (args_types[i]->name() == cdk::TYPE_DOUBLE && param_type->name() == cdk::TYPE_INT)
+      )
+        continue;
+      throw std::string("wrong type in argument of function call expression");
+    }
   }
 }
 
@@ -705,7 +704,7 @@ void mml::type_checker::do_function_definition_node(
     } else {
       _symtab.insert(main_at->name(), main);
     }
-    node->block()->accept(this, lvl + 2); // TODO: check if this is right
+    node->block()->accept(this, lvl + 2);
     _parent->set_new_symbol(main);
     return;
   }
@@ -717,9 +716,11 @@ void mml::type_checker::do_function_definition_node(
   } else {
     _symtab.insert(function->name(), function);
   }
+  _symtab.push();
   for (const auto &arg : node->arguments()->nodes()) {
     arg->accept(this, lvl + 2);
   }
-  node->block()->accept(this, lvl + 2); // TODO: check if this is right
+  node->block()->accept(this, lvl + 2);
+  _symtab.pop();
   _parent->set_new_symbol(function);
 }
