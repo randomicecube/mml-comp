@@ -828,9 +828,8 @@ void mml::postfix_writer::do_function_definition_node(
 }
 void mml::postfix_writer::processMainFunction(
     mml::function_definition_node *const node, int lvl) {
-  std::shared_ptr<mml::symbol> symbol;
   for (auto s_name: _symbolsToDeclare) {
-    symbol = _symtab.find(s_name, 0); // FIXME: is 0 relevant here?
+    auto symbol = _symtab.find(s_name, 0); // FIXME: is 0 relevant here?
     if (symbol->is_foreign())
       _functionsToDeclare.insert(s_name);
     else  {
@@ -840,17 +839,9 @@ void mml::postfix_writer::processMainFunction(
       _pf.SALLOC(symbol->type()->size());
     }            
   }
-  const auto fun_int_type = cdk::functional_type::create(cdk::primitive_type::create(4, cdk::TYPE_INT));
   // Note that it's ok to name the function _main, as no variable may have underscores
-  const auto main = mml::make_symbol(fun_int_type, "_main", 0, tPRIVATE);
+  const auto main = mml::make_symbol(cdk::functional_type::create(cdk::primitive_type::create(4, cdk::TYPE_INT)), "_main", 0, tPRIVATE);
   main->set_main();
-  const auto main_at = mml::make_symbol(fun_int_type, "@", 0, tPRIVATE);
-  main_at->set_main();
-  if (_symtab.find_local(main_at->name())) {
-    _symtab.replace(main_at->name(), main);
-  } else {
-    _symtab.insert(main_at->name(), main);
-  }
   _functions.push_back(main);
   _bodyReturnLabels.push_back("_main");
 

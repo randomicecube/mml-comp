@@ -83,13 +83,9 @@ void mml::type_checker::throw_incompatible_types(std::shared_ptr<cdk::basic_type
 
   switch (t1_name) {
   case cdk::TYPE_INT:
-    if (t2_name != cdk::TYPE_INT)
-      throw std::string("wrong type in " + field_name + " (expected int)");
-    break;
   case cdk::TYPE_DOUBLE:
     if (!(t2_name == cdk::TYPE_INT || t2_name == cdk::TYPE_DOUBLE))
-      throw std::string("wrong type in " + field_name +
-                        " (expected double or int)");
+      throw std::string("wrong type in " + field_name + " (expected double or int)");
     break;
   case cdk::TYPE_STRING:
     if (t2_name != cdk::TYPE_STRING)
