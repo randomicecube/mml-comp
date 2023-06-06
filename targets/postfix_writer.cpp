@@ -522,6 +522,18 @@ void mml::postfix_writer::do_return_node(mml::return_node *const node,
     node->retval()->accept(this, lvl + 2);
     switch (current_function_type_name) {
     case cdk::TYPE_INT:
+      if (!_functions.back()->is_main()) {
+        // allowing covariant return types (i.e., double is considered a valid return type to cast from int)
+        // we'll always return doubles from non-main functions (main returns 0 as per convention)
+        // instead of ints, to allow covariance
+        // the second part of this logic is handled in the function call's visitor, where we _load_ the return value,
+        // which should be the address of the first instruction of the function being called
+        _pf.I2D();
+        _pf.STFVAL64();
+      } else {
+        _pf.STFVAL32();
+      }
+      break;
     case cdk::TYPE_STRING:
     case cdk::TYPE_POINTER:
     case cdk::TYPE_FUNCTIONAL:
@@ -801,6 +813,17 @@ void mml::postfix_writer::do_function_call_node(
   case cdk::TYPE_VOID:
     break;
   case cdk::TYPE_INT:
+    if (_currentForwardLabel.empty()) {
+      // the second part of allowing covariance to happen (with the first one being handled in the return node's visitor)
+      // there, we make every non-main int-returning function actually return a double
+      // here, we convert that double back to an int, as it is the callee's responsibility to properly cast the return values
+      _pf.LDFVAL64();
+      _pf.D2I();
+    } else {
+      // note how in forwarded methods we don't need to do any conversion, as the return value is already an int
+      _pf.LDFVAL32();
+    }
+    break;
   case cdk::TYPE_STRING:
   case cdk::TYPE_POINTER:
   case cdk::TYPE_FUNCTIONAL:
