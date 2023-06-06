@@ -872,7 +872,7 @@ void mml::postfix_writer::processMainFunction(
   std::cout << "[DEBUG -- POSTFIX] Stack size for main function: " << fsc.localsize() << std::endl;
 
   _inFunctionBody = true;
-  const bool _previous_return_seen = _returnSeen;
+  const bool previous_return_seen = _returnSeen;
   _returnSeen = false;
   node->block()->accept(this, lvl + 2);
   _inFunctionBody = false;
@@ -882,14 +882,14 @@ void mml::postfix_writer::processMainFunction(
     // programmers aren't forced to return anything in main; by default, we return 0
     _pf.INT(0);
     _pf.STFVAL32();
+    _pf.LEAVE();
+    _pf.RET();
   }
-  _pf.LEAVE();
-  _pf.RET();
 
   _functions.pop_back();
   for (auto forwarded_function: _functionsToDeclare)
     _pf.EXTERN(forwarded_function);
-  _returnSeen = _previous_return_seen;
+  _returnSeen = previous_return_seen;
 }
 void mml::postfix_writer::processNonMainFunction(
     mml::function_definition_node *const node, int lvl) {
@@ -936,15 +936,10 @@ void mml::postfix_writer::processNonMainFunction(
   _inFunctionBody = _previouslyInFunctionBody;
   _symtab.pop(); // leaving args scope
 
-  // TODO: fix this, in some scenarios we have LEAVE/RET twice
-  // I don't know how to avoid this, as if we used the returnSeen flag,
-  // we could be missing a LEAVE/RET pair, such as in the example below
-  // void f = (int i) => { if (i == 0) { return; } };
-  // here, we have a return statement, but it's inside an if; the returnSeen flag
-  // would be set to true, but we would never generate the LEAVE/RET pair if
-  // the if condition evaluated to false
-  _pf.LEAVE();
-  _pf.RET();
+  if (!_returnSeen) {
+    _pf.LEAVE();
+    _pf.RET();
+  }
 
   if (function)
     _functions.pop_back();
