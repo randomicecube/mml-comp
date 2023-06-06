@@ -654,8 +654,8 @@ void mml::postfix_writer::processGlobalVariableInitialization(std::shared_ptr<mm
       if (symbol->qualifier() == tPUBLIC) // TODO: is this needed?
         _pf.GLOBAL(symbol->name(), _pf.OBJ());
       _pf.LABEL(symbol->name());
-      _pf.SADDR(_bodyReturnLabels.back());
-      _bodyReturnLabels.pop_back();
+      _pf.SADDR(_currentBodyReturnLabel);
+      _currentBodyReturnLabel.clear();
       break;
     default:
       error(initializer->lineno(), "invalid type for variable initialization");
@@ -861,15 +861,12 @@ void mml::postfix_writer::processMainFunction(
   _pf.GLOBAL("_main", _pf.FUNC());
   _pf.LABEL("_main");
 
-
   // compute stack size to be reserved for local variables
   frame_size_calculator fsc(_compiler, _symtab, main);
-  std::cout << "[DEBUG -- POSTFIX] Computing stack size for main function" << std::endl;
   _symtab.push(); // entering new context
   node->accept(&fsc, lvl);
   _symtab.pop(); // leaving context
   _pf.ENTER(fsc.localsize());
-  std::cout << "[DEBUG -- POSTFIX] Stack size for main function: " << fsc.localsize() << std::endl;
 
   _inFunctionBody = true;
   const bool previous_return_seen = _returnSeen;
@@ -878,6 +875,7 @@ void mml::postfix_writer::processMainFunction(
   _inFunctionBody = false;
 
   _symtab.pop(); // leaving context
+  _bodyReturnLabels.pop_back();
   if (!_returnSeen) {
     // programmers aren't forced to return anything in main; by default, we return 0
     _pf.INT(0);
@@ -917,6 +915,7 @@ void mml::postfix_writer::processNonMainFunction(
 
   const auto currentBodyReturnLabel = mklbl(++_lbl);
   _bodyReturnLabels.push_back(currentBodyReturnLabel);
+  std::cout << "[DEBUG -- POSTFIX] Current body return label: " << currentBodyReturnLabel << std::endl;
   _pf.TEXT(currentBodyReturnLabel);
   _pf.ALIGN();
   _pf.LABEL(currentBodyReturnLabel);
@@ -941,11 +940,13 @@ void mml::postfix_writer::processNonMainFunction(
     _pf.RET();
   }
 
+  _bodyReturnLabels.pop_back();
+  _currentBodyReturnLabel = currentBodyReturnLabel;
   if (function)
     _functions.pop_back();
   
   if (_inFunctionBody) {
-    _pf.TEXT(_functions.back()->name());
-    _pf.ADDR(currentBodyReturnLabel);
+    _pf.TEXT(_bodyReturnLabels.back());
+    _pf.ADDR(_currentBodyReturnLabel);
   }
 }

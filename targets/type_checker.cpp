@@ -507,7 +507,6 @@ void mml::type_checker::do_if_else_node(mml::if_else_node *const node,
   node->elseblock()->accept(this, lvl + 4);
 }
 
-// FIXME: I'm not proud of the variable names here
 void mml::type_checker::do_return_node(mml::return_node *const node, int lvl) {
   std::cout << "[DEBUG -- TYPE CHECKER] Entering node: RETURN_NODE" << std::endl;
   const auto symbol = _symtab.find("@", 1);
