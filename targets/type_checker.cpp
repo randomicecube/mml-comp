@@ -215,59 +215,42 @@ void mml::type_checker::do_sequence_node(cdk::sequence_node *const node,
 //--------------------------PURPOSEFULLY EMPTY-------------------------------
 
 void mml::type_checker::do_nil_node(cdk::nil_node *const node, int lvl) {
-  std::cout << "[DEBUG -- TYPE CHECKER] Entering node: NIL_NODE" << std::endl;
   // EMPTY
-  std::cout << "[DEBUG -- TYPE CHECKER] Leaving node: NIL_NODE" << std::endl;
 }
 void mml::type_checker::do_data_node(cdk::data_node *const node, int lvl) {
-  std::cout << "[DEBUG -- TYPE CHECKER] Entering node: DATA_NODE" << std::endl;
   // EMPTY
-  std::cout << "[DEBUG -- TYPE CHECKER] Leaving node: DATA_NODE" << std::endl;
 }
 void mml::type_checker::do_stop_node(mml::stop_node *const node, int lvl) {
-  std::cout << "[DEBUG -- TYPE CHECKER] Entering node: STOP_NODE" << std::endl;
   // EMPTY
-  std::cout << "[DEBUG -- TYPE CHECKER] Leaving node: STOP_NODE" << std::endl;
 }
 void mml::type_checker::do_next_node(mml::next_node *const node, int lvl) {
-  std::cout << "[DEBUG -- TYPE CHECKER] Entering node: NEXT_NODE" << std::endl;
   // EMPTY
-  std::cout << "[DEBUG -- TYPE CHECKER] Leaving node: NEXT_NODE" << std::endl;
 }
 void mml::type_checker::do_block_node(mml::block_node *const node, int lvl) {
-  std::cout << "[DEBUG -- TYPE CHECKER] Entering node: BLOCK_NODE" << std::endl;
   // EMPTY
-  std::cout << "[DEBUG -- TYPE CHECKER] Leaving node: BLOCK_NODE" << std::endl;
 }
 
 //---------------------------------------------------------------------------
 
 void mml::type_checker::do_integer_node(cdk::integer_node *const node,
                                         int lvl) {
-  std::cout << "[DEBUG -- TYPE CHECKER] Entering node: INTEGER_NODE" << std::endl;
   ASSERT_UNSPEC;
   node->type(cdk::primitive_type::create(4, cdk::TYPE_INT));
-  std::cout << "[DEBUG -- TYPE CHECKER] Leaving node: INTEGER_NODE" << std::endl;
 }
 
 void mml::type_checker::do_double_node(cdk::double_node *const node, int lvl) {
-  std::cout << "[DEBUG -- TYPE CHECKER] Entering node: DOUBLE_NODE" << std::endl;
   ASSERT_UNSPEC;
   node->type(cdk::primitive_type::create(8, cdk::TYPE_DOUBLE));
-  std::cout << "[DEBUG -- TYPE CHECKER] Leaving node: DOUBLE_NODE" << std::endl;
 }
 
 void mml::type_checker::do_string_node(cdk::string_node *const node, int lvl) {
-  std::cout << "[DEBUG -- TYPE CHECKER] Entering node: STRING_NODE" << std::endl;
   ASSERT_UNSPEC;
   node->type(cdk::primitive_type::create(4, cdk::TYPE_STRING));
-  std::cout << "[DEBUG -- TYPE CHECKER] Leaving node: STRING_NODE" << std::endl;
 }
 
 //---------------------------------------------------------------------------
 
 void mml::type_checker::do_neg_node(cdk::neg_node *const node, int lvl) {
-  std::cout << "[DEBUG -- TYPE CHECKER] Entering node: NEG_NODE" << std::endl;
   ASSERT_UNSPEC;
   node->argument()->accept(this, lvl + 2);
   if (!(node->argument()->is_typed(cdk::TYPE_INT) ||
@@ -275,25 +258,20 @@ void mml::type_checker::do_neg_node(cdk::neg_node *const node, int lvl) {
     throw std::string("wrong type in argument of negation expression");
   }
   node->type(node->argument()->type());
-  std::cout << "[DEBUG -- TYPE CHECKER] Leaving node: NEG_NODE" << std::endl;
 }
 void mml::type_checker::do_not_node(cdk::not_node *const node, int lvl) {
-  std::cout << "[DEBUG -- TYPE CHECKER] Entering node: NOT_NODE" << std::endl;
   ASSERT_UNSPEC;
   node->argument()->accept(this, lvl + 2);
   if (!node->argument()->is_typed(cdk::TYPE_INT)) {
     throw std::string("wrong type in argument of not expression");
   }
   node->type(node->argument()->type());
-  std::cout << "[DEBUG -- TYPE CHECKER] Leaving node: NOT_NODE" << std::endl;
 }
 
 //---------------------------------------------------------------------------
 
 void mml::type_checker::do_add_node(cdk::add_node *const node, int lvl) {
-  std::cout << "[DEBUG -- TYPE CHECKER] Entering node: ADD_NODE" << std::endl;
   processIDPBinaryExpression(node, lvl, false);
-  std::cout << "[DEBUG -- TYPE CHECKER] Leaving node: ADD_NODE" << std::endl;
 }
 void mml::type_checker::do_sub_node(cdk::sub_node *const node, int lvl) {
   processIDPBinaryExpression(node, lvl, true);
@@ -336,7 +314,6 @@ void mml::type_checker::do_or_node(cdk::or_node *const node, int lvl) {
 
 void mml::type_checker::do_variable_node(cdk::variable_node *const node,
                                          int lvl) {
-  std::cout << "[DEBUG -- TYPE CHECKER] Entering node: VARIABLE_NODE" << std::endl;
   ASSERT_UNSPEC;
   const std::string &id = node->name();
   std::shared_ptr<mml::symbol> symbol = _symtab.find(id);
@@ -346,11 +323,9 @@ void mml::type_checker::do_variable_node(cdk::variable_node *const node,
   } else {
     throw id;
   }
-  std::cout << "[DEBUG -- TYPE CHECKER] Leaving node: VARIABLE_NODE" << std::endl;
 }
 
 void mml::type_checker::do_rvalue_node(cdk::rvalue_node *const node, int lvl) {
-  std::cout << "[DEBUG -- TYPE CHECKER] Entering node: RVALUE_NODE" << std::endl;
   ASSERT_UNSPEC;
   try {
     node->lvalue()->accept(this, lvl);
@@ -358,12 +333,10 @@ void mml::type_checker::do_rvalue_node(cdk::rvalue_node *const node, int lvl) {
   } catch (const std::string &id) {
     throw "undeclared variable '" + id + "'";
   }
-  std::cout << "[DEBUG -- TYPE CHECKER] Leaving node: RVALUE_NODE" << std::endl;
 }
 
 void mml::type_checker::do_assignment_node(cdk::assignment_node *const node,
                                            int lvl) {
-  std::cout << "[DEBUG -- TYPE CHECKER] Entering node: ASSIGNMENT_NODE" << std::endl;
   ASSERT_UNSPEC;
   node->lvalue()->accept(this, lvl + 2);
   node->rvalue()->accept(this, lvl + 2);
@@ -461,22 +434,17 @@ void mml::type_checker::do_assignment_node(cdk::assignment_node *const node,
   default:
     throw std::string("wrong types in assignment");
   }
-  std::cout << "[DEBUG -- TYPE CHECKER] Leaving node: ASSIGNMENT_NODE" << std::endl;
 }
 
 //---------------------------------------------------------------------------
 
 void mml::type_checker::do_evaluation_node(mml::evaluation_node *const node,
                                            int lvl) {
-  std::cout << "[DEBUG -- TYPE CHECKER] Entering node: EVALUATION_NODE" << std::endl;
   node->argument()->accept(this, lvl + 2);
-  std::cout << "[DEBUG -- TYPE CHECKER] Leaving node: EVALUATION_NODE" << std::endl;
 }
 
 void mml::type_checker::do_print_node(mml::print_node *const node, int lvl) {
-  std::cout << "[DEBUG -- TYPE CHECKER] Entering node: PRINT_NODE" << std::endl;
   node->arguments()->accept(this, lvl + 2);
-  std::cout << "[DEBUG -- TYPE CHECKER] Leaving node: PRINT_NODE" << std::endl;
 }
 
 //---------------------------------------------------------------------------
@@ -504,7 +472,6 @@ void mml::type_checker::do_if_else_node(mml::if_else_node *const node,
 }
 
 void mml::type_checker::do_return_node(mml::return_node *const node, int lvl) {
-  std::cout << "[DEBUG -- TYPE CHECKER] Entering node: RETURN_NODE" << std::endl;
   const auto symbol = _symtab.find("@", 1);
   const auto ret_val = node->retval();
   if (!symbol) { // we may be in main
@@ -532,24 +499,20 @@ void mml::type_checker::do_return_node(mml::return_node *const node, int lvl) {
 
   ret_val->accept(this, lvl + 2);
   throw_incompatible_types(output, ret_val->type());
-  std::cout << "[DEBUG -- TYPE CHECKER] Leaving node: RETURN_NODE" << std::endl;
 }
 
 //---------------------------------------------------------------------------
 
 void mml::type_checker::do_nullptr_node(mml::nullptr_node *const node,
                                         int lvl) {
-  std::cout << "[DEBUG -- TYPE CHECKER] Entering node: NULLPTR_NODE" << std::endl;
   ASSERT_UNSPEC;
   node->type(cdk::reference_type::create(4, nullptr));
-  std::cout << "[DEBUG -- TYPE CHECKER] Leaving node: NULLPTR_NODE" << std::endl;
 }
 
 //---------------------------------------------------------------------------
 
 void mml::type_checker::do_declaration_node(mml::declaration_node *const node,
                                             int lvl) {
-  std::cout << "[DEBUG -- TYPE CHECKER] Entering node: DECLARATION_NODE" << std::endl;
   const auto &init = node->init();
   if (init) {
     init->accept(this, lvl + 2);
@@ -600,7 +563,6 @@ void mml::type_checker::do_declaration_node(mml::declaration_node *const node,
   _parent->set_new_symbol(new_symbol);
   if (node->qualifier() == tFOREIGN)
     new_symbol->set_foreign();
-  std::cout << "[DEBUG -- TYPE CHECKER] Leaving node: DECLARATION_NODE" << std::endl;
 }
 
 //---------------------------------------------------------------------------
@@ -669,7 +631,6 @@ void mml::type_checker::do_address_of_node(mml::address_of_node *const node,
 
 void mml::type_checker::do_function_call_node(
     mml::function_call_node *const node, int lvl) {
-  std::cout << "[DEBUG -- TYPE CHECKER] Entering node: FUNCTION_CALL_NODE" << std::endl;
   ASSERT_UNSPEC;
   std::vector<std::shared_ptr<cdk::basic_type>> args_types;
 
@@ -709,7 +670,6 @@ void mml::type_checker::do_function_call_node(
       throw std::string("wrong type in argument of function call expression");
     }
   }
-  std::cout << "[DEBUG -- TYPE CHECKER] Leaving node: FUNCTION_CALL_NODE" << std::endl;
 }
 
 //---------------------------------------------------------------------------
@@ -717,7 +677,5 @@ void mml::type_checker::do_function_call_node(
 void mml::type_checker::do_function_definition_node(
     mml::function_definition_node *const node, int lvl) {
   ASSERT_UNSPEC;
-  std::cout << "[DEBUG -- TYPE CHECKER] Entering node: FUNCTION_DEFINITION_NODE" << std::endl;
   // Should never get here, as the type of the function's definition is set in the node's constructor
-  std::cout << "[DEBUG -- TYPE CHECKER] Leaving node: FUNCTION_DEFINITION_NODE" << std::endl;
 }
