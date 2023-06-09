@@ -59,11 +59,12 @@
 
 /* Associativity rules */
 
-%nonassoc tIF tWHILE
+%nonassoc tIF
 %nonassoc tELIF tELSE
 
 %right '='
-%left tAND tOR
+%left OR
+%left AND
 %nonassoc '~'
 %left tNE tEQ
 %left '<' tLE tGE '>'
