@@ -47,11 +47,11 @@
 %token tINT_TYPE tDOUBLE_TYPE tSTRING_TYPE tVOID_TYPE tNULLPTR
 
 %type <sequence> file global_declarations declarations instructions opt_expressions expressions opt_args args
-%type <expression> expression opt_init opt_global_init literal fun_def init global_init
+%type <expression> expression opt_init opt_global_init literal fun_def init global_init opt_public
 %type <lvalue> lval
 %type <block> inner_block block
 %type <node> main global_declaration declaration
-%type <node> conditional_instruction instruction else arg 
+%type <node> conditional_instruction instruction else arg
 
 %type <s> string
 %type <type> fun_type data_type void_type void_pointer opt_auto auto return_type var_type
@@ -90,11 +90,10 @@ global_declarations : global_declaration ';'                                    
                     | global_declarations global_declaration ';'                { $$ = new cdk::sequence_node(LINE, $2, $1); }
                     ;
 
-global_declaration : tFOREIGN  fun_type  tIDENTIFIER                            { $$ = new mml::declaration_node(LINE, tFOREIGN, $2, *$3, nullptr); delete $3; }
-                   | tFORWARD  var_type tIDENTIFIER                             { $$ = new mml::declaration_node(LINE, tFORWARD, $2, *$3, nullptr); delete $3; }
-                   | tPUBLIC   var_type tIDENTIFIER opt_global_init                    { $$ = new mml::declaration_node(LINE, tPUBLIC, $2, *$3, $4); delete $3; }
-                   | tPUBLIC   opt_auto  tIDENTIFIER opt_global_init                   { $$ = new mml::declaration_node(LINE, tPUBLIC, $2, *$3, $4); delete $3; }
-                   | declaration                                                { $$ = $1; }
+global_declaration : tFOREIGN  fun_type  tIDENTIFIER                            { $$ = new mml::declaration_node(LINE, $1, $2, *$3, nullptr); delete $3; }
+                   | tFORWARD  var_type tIDENTIFIER                             { $$ = new mml::declaration_node(LINE, $1, $2, *$3, nullptr); delete $3; }
+                   | opt_public var_type tIDENTIFIER opt_global_init            { $$ = new mml::declaration_node(LINE, $1, $2, *$3, $4); delete $3; }
+                   | opt_public opt_auto  tIDENTIFIER opt_global_init           { $$ = new mml::declaration_node(LINE, $1, $2, *$3, $4); delete $3; }
                    ;
 
 opt_auto: /* empty */                             { $$ = nullptr; }
@@ -156,6 +155,10 @@ opt_init : /* empty */                            { $$ = nullptr; }
 
 init : '=' expression                             { $$ = $2; }
      ;
+
+opt_public : /* empty */                          { $$ = nullptr; }
+           | tPUBLIC                              { $$ = $1; }
+           ;
 
 declarations : declaration ';'	                        { $$ = new cdk::sequence_node(LINE, $1); }
              | declarations declaration ';'             { $$ = new cdk::sequence_node(LINE, $2, $1); }
