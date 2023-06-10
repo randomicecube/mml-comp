@@ -43,7 +43,7 @@
 
 %token tINPUT tWRITE tWRITELN tSIZEOF tRETURN
 %token tFOREIGN tFORWARD tPUBLIC tPRIVATE tAUTO
-%token tBEGIN tEND tARROW tNEXT tSTOP
+%token tBEGIN tEND tARROW tNEXT tSTOP tWHILE
 %token tINT_TYPE tDOUBLE_TYPE tSTRING_TYPE tVOID_TYPE tNULLPTR
 
 %type <sequence> file global_declarations declarations instructions opt_expressions expressions opt_args args
@@ -63,8 +63,8 @@
 %nonassoc tELIF tELSE
 
 %right '='
-%left OR
-%left AND
+%left tOR
+%left tAND
 %nonassoc '~'
 %left tNE tEQ
 %left '<' tLE tGE '>'
