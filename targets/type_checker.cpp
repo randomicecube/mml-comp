@@ -471,10 +471,10 @@ void mml::type_checker::do_if_else_node(mml::if_else_node *const node,
 }
 
 void mml::type_checker::do_return_node(mml::return_node *const node, int lvl) {
-  const auto symbol = _symtab.find("@", 1);
+  const auto symbol = _symtab.find("@");
   const auto ret_val = node->retval();
   if (!symbol) { // we may be in main
-    const auto main = _symtab.find("_main", 0);
+    const auto main = _symtab.find("_main");
     if (main) {
       if (!ret_val)
         throw std::string("wrong type of return value in main (int expected)");
@@ -642,12 +642,13 @@ void mml::type_checker::do_function_call_node(
     args_types = cdk::functional_type::cast(type)->input()->components();
     node->type(cdk::functional_type::cast(type)->output(0));
   } else { // recursive call (@)
-    auto symbol = _symtab.find("@", 1); // looks at one level above for the symbol
-    if (!symbol)
+    auto symbol = _symtab.find("@");
+    if (!symbol) {
+      auto main = _symtab.find("_main");
+      if (main)
+        throw std::string("recursive call in main function");
       throw std::string("recursive call to undeclared function");
-    else if (symbol->is_main())
-      throw std::string("recursive call in main function");
-
+    }
     const auto &type = symbol->type();
     args_types = cdk::functional_type::cast(type)->input()->components();
     node->type(cdk::functional_type::cast(type)->output(0));

@@ -778,7 +778,7 @@ void mml::postfix_writer::processMainFunction(
   }
   // Note that it's ok to name the function _main, as no variable may have underscores
   const auto main = mml::make_symbol(cdk::functional_type::create(cdk::primitive_type::create(4, cdk::TYPE_INT)), "_main", 0, tPRIVATE);
-  main->set_main();
+  _symtab.insert(main->name(), main);
   _functions.push_back(main);
   _bodyReturnLabels.push_back("_main");
 
