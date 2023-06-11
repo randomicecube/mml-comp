@@ -44,7 +44,7 @@ protected:
                                 int lvl);
   void processIDBinaryExpression(cdk::binary_operation_node *const node,
                                  int lvl);
-  void processIDPBinaryExpression(cdk::binary_operation_node *const node,
+  void processAdditiveBinaryExpression(cdk::binary_operation_node *const node,
                                   int lvl, bool isSub);
   void
   processComparisonBinaryExpression(cdk::binary_operation_node *const node,

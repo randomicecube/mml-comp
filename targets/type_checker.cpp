@@ -166,7 +166,7 @@ void mml::type_checker::processIDBinaryExpression(
     throw std::string("wrong types in binary expression");
 }
 
-void mml::type_checker::processIDPBinaryExpression(
+void mml::type_checker::processAdditiveBinaryExpression(
     cdk::binary_operation_node *const node, int lvl, bool isSub) {
   ASSERT_UNSPEC;
   if (processBinaryExpression(node, lvl))
@@ -204,7 +204,7 @@ void mml::type_checker::processEqualityBinaryExpression(
     cdk::binary_operation_node *const node, int lvl) {
   node->left()->accept(this, lvl + 2);
   node->right()->accept(this, lvl + 2);
-  if (!check_compatible_types(node->left()->type(), node->right()->type())) {
+  if (!(processBinaryExpression(node, lvl) || check_compatible_ptr_types(node->left()->type(), node->right()->type()))) {
     throw std::string("same type expected on both sides of equality operator");
   }
   node->type(cdk::primitive_type::create(4, cdk::TYPE_INT));
@@ -276,10 +276,10 @@ void mml::type_checker::do_not_node(cdk::not_node *const node, int lvl) {
 //---------------------------------------------------------------------------
 
 void mml::type_checker::do_add_node(cdk::add_node *const node, int lvl) {
-  processIDPBinaryExpression(node, lvl, false);
+  processAdditiveBinaryExpression(node, lvl, false);
 }
 void mml::type_checker::do_sub_node(cdk::sub_node *const node, int lvl) {
-  processIDPBinaryExpression(node, lvl, true);
+  processAdditiveBinaryExpression(node, lvl, true);
 }
 void mml::type_checker::do_mul_node(cdk::mul_node *const node, int lvl) {
   processIDBinaryExpression(node, lvl);
