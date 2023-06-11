@@ -445,9 +445,8 @@ void mml::type_checker::do_declaration_node(mml::declaration_node *const node,
   }
 
   const auto new_symbol = mml::make_symbol(node->type(), node->identifier(), (bool) node->init(), node->qualifier());
-  if (!_symtab.insert(node->identifier(), new_symbol)) {
+  if (!_symtab.insert(node->identifier(), new_symbol))
     _symtab.replace(node->identifier(), new_symbol);
-  }
   _parent->set_new_symbol(new_symbol);
 }
 
