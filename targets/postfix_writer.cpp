@@ -138,20 +138,20 @@ void mml::postfix_writer::do_sequence_node(cdk::sequence_node *const node,
 void mml::postfix_writer::processIDPBinaryExpression(cdk::binary_operation_node *const node, int lvl) {
   ASSERT_SAFE_EXPRESSIONS;
   node->left()->accept(this, lvl + 2);
-  if (node->is_typed(cdk::TYPE_DOUBLE) && node->left()->is_typed(cdk::TYPE_INT))
+  if (node->is_typed(cdk::TYPE_DOUBLE) && !node->left()->is_typed(cdk::TYPE_DOUBLE))
     _pf.I2D();
-  else if (node->is_typed(cdk::TYPE_POINTER) && node->left()->is_typed(cdk::TYPE_INT)) {
-    const auto ref_left = cdk::reference_type::cast(node->right()->type())->referenced();
-    _pf.INT(ref_left->size());
+  else if (node->is_typed(cdk::TYPE_POINTER) && !node->left()->is_typed(cdk::TYPE_POINTER)) {
+    const auto ref_right = cdk::reference_type::cast(node->right()->type())->referenced();
+    _pf.INT(ref_right->size());
     _pf.MUL();
   }
 
   node->right()->accept(this, lvl + 2);
-  if (node->is_typed(cdk::TYPE_DOUBLE) && node->right()->is_typed(cdk::TYPE_INT))
+  if (node->is_typed(cdk::TYPE_DOUBLE) && !node->right()->is_typed(cdk::TYPE_DOUBLE))
     _pf.I2D();
-  else if (node->is_typed(cdk::TYPE_POINTER) && node->right()->is_typed(cdk::TYPE_INT)) {
-    const auto ref_right = cdk::reference_type::cast(node->left()->type())->referenced();
-    _pf.INT(ref_right->size());
+  else if (node->is_typed(cdk::TYPE_POINTER) && !node->right()->is_typed(cdk::TYPE_POINTER)) {
+    const auto ref_left = cdk::reference_type::cast(node->left()->type())->referenced();
+    _pf.INT(ref_left->size());
     _pf.MUL();
   }
 }
@@ -186,11 +186,11 @@ void mml::postfix_writer::do_sub_node(cdk::sub_node *const node, int lvl) {
 void mml::postfix_writer::processIDBinaryExpression(cdk::binary_operation_node *const node, int lvl) {
   ASSERT_SAFE_EXPRESSIONS;
   node->left()->accept(this, lvl + 2);
-  if (node->is_typed(cdk::TYPE_DOUBLE) && node->left()->is_typed(cdk::TYPE_INT))
+  if (node->is_typed(cdk::TYPE_DOUBLE) && !node->left()->is_typed(cdk::TYPE_DOUBLE))
     _pf.I2D();
 
   node->right()->accept(this, lvl + 2);
-  if (node->is_typed(cdk::TYPE_DOUBLE) && node->right()->is_typed(cdk::TYPE_INT))
+  if (node->is_typed(cdk::TYPE_DOUBLE) && !node->right()->is_typed(cdk::TYPE_DOUBLE))
     _pf.I2D();
 }
 void mml::postfix_writer::do_mul_node(cdk::mul_node *const node, int lvl) {
@@ -221,11 +221,11 @@ void mml::postfix_writer::do_mod_node(cdk::mod_node *const node, int lvl) {
 void mml::postfix_writer::processGeneralLogicalBinaryExpression(cdk::binary_operation_node *const node, int lvl) {
   ASSERT_SAFE_EXPRESSIONS;
   node->left()->accept(this, lvl + 2);
-  if (node->left()->is_typed(cdk::TYPE_DOUBLE) && node->right()->is_typed(cdk::TYPE_INT))
+  if (node->left()->is_typed(cdk::TYPE_DOUBLE) && !node->right()->is_typed(cdk::TYPE_DOUBLE))
     _pf.I2D();
   
   node->right()->accept(this, lvl + 2);
-  if (node->right()->is_typed(cdk::TYPE_DOUBLE) && node->left()->is_typed(cdk::TYPE_INT))
+  if (node->right()->is_typed(cdk::TYPE_DOUBLE) && !node->left()->is_typed(cdk::TYPE_DOUBLE))
     _pf.I2D();
   
   if (node->left()->is_typed(cdk::TYPE_DOUBLE) || node->right()->is_typed(cdk::TYPE_DOUBLE)) {
