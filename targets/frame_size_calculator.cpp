@@ -158,10 +158,12 @@ void mml::frame_size_calculator::do_sequence_node(
 }
 void mml::frame_size_calculator::do_block_node(mml::block_node *const node,
                                                int lvl) {
+  _symtab.push();
   if (node->declarations())
     node->declarations()->accept(this, lvl + 2);
   if (node->instructions())
     node->instructions()->accept(this, lvl + 2);
+  _symtab.pop();
 }
 void mml::frame_size_calculator::do_while_node(mml::while_node *const node,
                                                int lvl) {
