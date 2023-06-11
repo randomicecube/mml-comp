@@ -445,42 +445,8 @@ void mml::type_checker::do_declaration_node(mml::declaration_node *const node,
   }
 
   const auto new_symbol = mml::make_symbol(node->type(), node->identifier(), (bool) node->init(), node->qualifier());
-
   if (!_symtab.insert(node->identifier(), new_symbol)) {
-    // in this case, we are redeclaring a variable
-    const auto previous_symbol = _symtab.find_local(node->identifier());
-    const auto new_symbol_type = new_symbol->type();
-    const auto previous_symbol_type = previous_symbol->type();
-    switch (new_symbol_type->name()) {
-    case cdk::TYPE_INT:
-    case cdk::TYPE_DOUBLE:
-    case cdk::TYPE_STRING:
-      if (new_symbol_type->name() == previous_symbol_type->name()) {
-        _symtab.replace(node->identifier(), new_symbol);
-        break;
-      }
-      [[fallthrough]];
-    case cdk::TYPE_POINTER:
-      if (previous_symbol_type->name() == cdk::TYPE_POINTER && check_compatible_ptr_types(new_symbol_type, previous_symbol_type)) {
-        _symtab.replace(node->identifier(), new_symbol);
-        break;
-      }
-      [[fallthrough]];
-    case cdk::TYPE_FUNCTIONAL:
-      if (
-        previous_symbol_type->name() == cdk::TYPE_FUNCTIONAL &&
-        check_compatible_fun_types(
-          cdk::functional_type::cast(new_symbol_type),
-          cdk::functional_type::cast(previous_symbol_type)
-        )
-      ) {
-        _symtab.replace(node->identifier(), new_symbol);
-        break;
-      }
-      [[fallthrough]];
-    default:
-      throw std::string("wrong redeclaration of variable " + node->identifier());
-    }
+    _symtab.replace(node->identifier(), new_symbol);
   }
   _parent->set_new_symbol(new_symbol);
 }
