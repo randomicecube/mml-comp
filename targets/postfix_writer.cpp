@@ -268,7 +268,7 @@ void mml::postfix_writer::do_variable_node(cdk::variable_node *const node,
   // a symbol may be global, local, or forwarded from another module
   // note how we want to check if it's foreign before if it's global,
   // as otherwise we wouldn't be CALLing it, but rather branching to it
-  if (symbol->is_foreign())
+  if (symbol->qualifier() == tFOREIGN)
     // if it's been forwarded, we won't branch to it, but rather call it;
     // as such, we'll needs its label (note that this'll be useful in
     // function calls)
@@ -769,7 +769,7 @@ void mml::postfix_writer::processMainFunction(
     mml::function_definition_node *const node, int lvl) {
   for (auto s_name: _symbolsToDeclare) {
     auto symbol = _symtab.find(s_name, 0); // FIXME: is 0 relevant here?
-    if (symbol->is_foreign())
+    if (symbol->qualifier() == tFOREIGN)
       _functionsToDeclare.insert(s_name);
     else  {
       _pf.BSS();

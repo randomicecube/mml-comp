@@ -1,6 +1,5 @@
 #include "targets/frame_size_calculator.h"
 #include ".auto/all_nodes.h"
-#include "targets/symbol.h"
 #include "targets/type_checker.h"
 
 mml::frame_size_calculator::~frame_size_calculator() { os().flush(); }

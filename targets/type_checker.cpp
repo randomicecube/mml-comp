@@ -502,8 +502,6 @@ void mml::type_checker::do_declaration_node(mml::declaration_node *const node,
     }
   }
   _parent->set_new_symbol(new_symbol);
-  if (node->qualifier() == tFOREIGN)
-    new_symbol->set_foreign();
 }
 
 //---------------------------------------------------------------------------

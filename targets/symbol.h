@@ -12,7 +12,6 @@ class symbol {
   std::string _name;
   long _value; // hack!
   int _qualifier;
-  bool _is_foreign = false;
 
   int _offset = 0;
 
@@ -31,8 +30,6 @@ public:
   long value() const { return _value; }
   long value(long v) { return _value = v; }
   bool is_main() const { return name() == "_main"; }
-  void set_foreign() { _is_foreign = true; }
-  bool is_foreign() const { return _is_foreign; }
   bool is_global() const { return _offset == 0; }
   void set_offset(int offset) { _offset = offset; }
   int offset() const { return _offset; }
