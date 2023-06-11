@@ -29,14 +29,15 @@ protected:
   bool check_compatible_fun_types(std::shared_ptr<cdk::functional_type> t1,
                                    std::shared_ptr<cdk::functional_type> t2);
   bool check_compatible_types(std::shared_ptr<cdk::basic_type> t1,
-                               std::shared_ptr<cdk::basic_type> t2);
+                               std::shared_ptr<cdk::basic_type> t2,
+                               bool is_return = false);
   // the boolean argument is an ugly hack to avoid having to create a new
   // function to distinguish the edge case of returns vs declarations
   // does a similar job to the above function, but throws an error instead of
   // returning false if the types are incompatible
   void throw_incompatible_types(std::shared_ptr<cdk::basic_type> t1,
                              std::shared_ptr<cdk::basic_type> t2,
-                             bool is_return = true);
+                             bool is_return = false);
   void hint_type(cdk::typed_node *const lvalue, cdk::typed_node *const rvalue);
   bool processBinaryExpression(cdk::binary_operation_node *const node, int lvl);
   void processIBinaryExpression(cdk::binary_operation_node *const node,
@@ -46,13 +47,13 @@ protected:
   void processIDPBinaryExpression(cdk::binary_operation_node *const node,
                                   int lvl, bool isSub);
   void
-  processScalarLogicalBinaryExpression(cdk::binary_operation_node *const node,
+  processComparisonBinaryExpression(cdk::binary_operation_node *const node,
                                        int lvl);
   void
-  processBooleanLogicalBinaryExpression(cdk::binary_operation_node *const node,
+  processLogicalBinaryExpression(cdk::binary_operation_node *const node,
                                         int lvl);
   void
-  processGeneralLogicalBinaryExpression(cdk::binary_operation_node *const node,
+  processEqualityBinaryExpression(cdk::binary_operation_node *const node,
                                         int lvl);
 
   template <typename T>
