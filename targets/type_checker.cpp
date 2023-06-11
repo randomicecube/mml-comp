@@ -390,9 +390,9 @@ void mml::type_checker::do_if_else_node(mml::if_else_node *const node,
 }
 
 void mml::type_checker::do_return_node(mml::return_node *const node, int lvl) {
-  const auto symbol = _symtab.find("@");
+  const auto function = _symtab.find("@");
   const auto ret_val = node->retval();
-  if (!symbol) { // we may be in main
+  if (!function) { // we may be in main
     const auto main = _symtab.find("_main");
     if (main) {
       if (!ret_val)
@@ -407,16 +407,16 @@ void mml::type_checker::do_return_node(mml::return_node *const node, int lvl) {
     return;
   }
 
-  const auto &fun_sym_type = cdk::functional_type::cast(symbol->type());
-  const auto output = fun_sym_type->output(0);
+  const auto &fun_sym_type = cdk::functional_type::cast(function->type());
+  const auto function_output = fun_sym_type->output(0);
   const bool has_output = fun_sym_type->output() != nullptr;
-  if (has_output && output->name() == cdk::TYPE_VOID)
+  if (has_output && function_output->name() == cdk::TYPE_VOID)
     throw std::string("return with a value in void function");
   else if (!has_output)
     throw std::string("unknown return type in function");
 
   ret_val->accept(this, lvl + 2);
-  throw_incompatible_types(output, ret_val->type(), true);
+  throw_incompatible_types(function_output, ret_val->type(), true);
 }
 
 //---------------------------------------------------------------------------
