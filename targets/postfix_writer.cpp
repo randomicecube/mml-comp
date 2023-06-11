@@ -61,8 +61,8 @@ void mml::postfix_writer::do_string_node(cdk::string_node *const node,
 
   if (_inFunctionBody) {
     // local variable initializer
-    _pf.TEXT(_bodyReturnLabels.back());                    // return to the TEXT segment
-    _pf.ADDR(lbl);                 // the string to be printed
+    _pf.TEXT(_bodyReturnLabels.back());  // return to the TEXT segment
+    _pf.ADDR(lbl);                       // the string to be printed
   } else {
     // global variable initializer
     _pf.DATA();                    // return to the DATA segment
@@ -540,6 +540,7 @@ void mml::postfix_writer::processLocalVariableInitialization(std::shared_ptr<mml
     case cdk::TYPE_STRING:
     case cdk::TYPE_POINTER:
     case cdk::TYPE_FUNCTIONAL:
+    case cdk::TYPE_UNSPEC: // cases such as `auto x = input;`
       _pf.LOCAL(symbol->offset());
       _pf.STINT();
       break;
@@ -621,6 +622,7 @@ void mml::postfix_writer::do_input_node(mml::input_node *const node, int lvl) {
   ASSERT_SAFE_EXPRESSIONS;
   switch (node->type()->name()) {
   case cdk::TYPE_INT:
+  case cdk::TYPE_UNSPEC: // cases like `auto x = input;`
     _functionsToDeclare.insert("readi");
     _pf.CALL("readi");
     _pf.LDFVAL32();

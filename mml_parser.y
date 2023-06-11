@@ -101,7 +101,7 @@ opt_auto: /* empty */                             { $$ = nullptr; }
         | auto                                    { $$ = $1; }
         ;
 
-auto : tAUTO                                      { $$ = nullptr; }
+auto : tAUTO                                      { $$ = cdk::primitive_type::create(0, cdk::TYPE_UNSPEC); }
      ;
 
 block : '{' inner_block '}'                       { $$ = $2; }
