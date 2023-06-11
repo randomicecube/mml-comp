@@ -793,9 +793,7 @@ void mml::postfix_writer::processMainFunction(
 
   // compute stack size to be reserved for local variables
   frame_size_calculator fsc(_compiler, _symtab, main);
-  _symtab.push(); // entering new context
   node->accept(&fsc, lvl);
-  _symtab.pop(); // leaving context
   _pf.ENTER(fsc.localsize());
 
   _inFunctionBody = true;
@@ -851,9 +849,7 @@ void mml::postfix_writer::processNonMainFunction(
 
   // compute stack size to be reserved for local variables
   frame_size_calculator fsc(_compiler, _symtab, function);
-  _symtab.push();
   node->accept(&fsc, lvl);
-  _symtab.pop();
   _pf.ENTER(fsc.localsize());
 
   _offset = 0; // reset offset, prepare for local variables
