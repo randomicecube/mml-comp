@@ -47,11 +47,11 @@
 %token tINT_TYPE tDOUBLE_TYPE tSTRING_TYPE tVOID_TYPE tNULLPTR
 
 %type <sequence> file global_declarations declarations instructions opt_expressions expressions opt_args args
-%type <expression> expression opt_init  literal fun_def init
+%type <expression> expression opt_init opt_global_init literal fun_def init global_init
 %type <lvalue> lval
 %type <block> inner_block block
 %type <node> main global_declaration declaration
-%type <node> conditional_instruction instruction else arg 
+%type <node> conditional_instruction instruction else arg
 
 %type <s> string
 %type <type> fun_type data_type void_type void_pointer opt_auto auto return_type var_type
@@ -93,9 +93,10 @@ global_declarations : global_declaration ';'                                    
 
 global_declaration : tFOREIGN  fun_type  tIDENTIFIER                            { $$ = new mml::declaration_node(LINE, tFOREIGN, $2, *$3, nullptr); delete $3; }
                    | tFORWARD  var_type tIDENTIFIER                             { $$ = new mml::declaration_node(LINE, tFORWARD, $2, *$3, nullptr); delete $3; }
-                   | tPUBLIC   var_type tIDENTIFIER opt_init                    { $$ = new mml::declaration_node(LINE, tPUBLIC, $2, *$3, $4); delete $3; }
-                   | tPUBLIC   opt_auto  tIDENTIFIER opt_init                   { $$ = new mml::declaration_node(LINE, tPUBLIC, $2, *$3, $4); delete $3; }
-                   | declaration                                                { $$ = $1; }
+                   | tPUBLIC var_type tIDENTIFIER opt_global_init               { $$ = new mml::declaration_node(LINE, tPUBLIC, $2, *$3, $4); delete $3; }
+                   | tPUBLIC opt_auto  tIDENTIFIER opt_global_init              { $$ = new mml::declaration_node(LINE, tPUBLIC, $2, *$3, $4); delete $3; }
+                   | var_type tIDENTIFIER opt_global_init                       { $$ = new mml::declaration_node(LINE, tPRIVATE, $1, *$2, $3); delete $2; }
+                   | opt_auto  tIDENTIFIER opt_global_init                      { $$ = new mml::declaration_node(LINE, tPRIVATE, $1, *$2, $3); delete $2; }
                    ;
 
 opt_auto: /* empty */                             { $$ = nullptr; }
@@ -140,8 +141,16 @@ void_pointer : '[' void_pointer ']'               { $$ = $2; }
 void_type : tVOID_TYPE                            { $$ = cdk::primitive_type::create(4, cdk::TYPE_VOID); }
           ;
 
-return_type : var_type                       { $$ = $1; }
-            | void_type                      { $$ = $1; }
+return_type : var_type                            { $$ = $1; }
+            | void_type                           { $$ = $1; }
+            ;
+
+opt_global_init : /* empty */                     { $$ = nullptr; }
+                | global_init                     { $$ = $1; }
+                ;
+
+global_init : '=' literal                         { $$ = $2; }
+            | '=' fun_def                         { $$ = $2; }
             ;
 
 opt_init : /* empty */                            { $$ = nullptr; }
