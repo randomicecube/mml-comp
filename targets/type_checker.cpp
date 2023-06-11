@@ -616,6 +616,5 @@ void mml::type_checker::do_function_call_node(
 
 void mml::type_checker::do_function_definition_node(
     mml::function_definition_node *const node, int lvl) {
-  ASSERT_UNSPEC;
-  // Should never get here, as the type of the function's definition is set in the node's constructor
+  // Purposefully empty, as the type of the function's definition is set in the node's constructor
 }
