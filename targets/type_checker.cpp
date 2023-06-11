@@ -105,7 +105,7 @@ void mml::type_checker::throw_incompatible_types(std::shared_ptr<cdk::basic_type
       throw std::string("wrong type in " + field_name + " (expected function)");
     break;
   case cdk::TYPE_UNSPEC:
-    // should only happen in cases such as `auto x = input;`
+    // useful for auto cases
     break;
   default:
     throw std::string("unknown type in " + field_name);
