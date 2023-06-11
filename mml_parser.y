@@ -94,9 +94,9 @@ global_declarations : global_declaration ';'                                    
 global_declaration : tFOREIGN  fun_type  tIDENTIFIER                            { $$ = new mml::declaration_node(LINE, tFOREIGN, $2, *$3, nullptr); delete $3; }
                    | tFORWARD  var_type tIDENTIFIER                             { $$ = new mml::declaration_node(LINE, tFORWARD, $2, *$3, nullptr); delete $3; }
                    | tPUBLIC var_type tIDENTIFIER opt_global_init               { $$ = new mml::declaration_node(LINE, tPUBLIC, $2, *$3, $4); delete $3; }
-                   | tPUBLIC opt_auto  tIDENTIFIER global_init              { $$ = new mml::declaration_node(LINE, tPUBLIC, $2, *$3, $4); delete $3; }
+                   | tPUBLIC opt_auto  tIDENTIFIER global_init                  { $$ = new mml::declaration_node(LINE, tPUBLIC, $2, *$3, $4); delete $3; }
                    | var_type tIDENTIFIER opt_global_init                       { $$ = new mml::declaration_node(LINE, tPRIVATE, $1, *$2, $3); delete $2; }
-                   | opt_auto  tIDENTIFIER global_init                      { $$ = new mml::declaration_node(LINE, tPRIVATE, $1, *$2, $3); delete $2; }
+                   | opt_auto  tIDENTIFIER global_init                          { $$ = new mml::declaration_node(LINE, tPRIVATE, $1, *$2, $3); delete $2; }
                    ;
 
 opt_auto: /* empty */                             { $$ = nullptr; }
