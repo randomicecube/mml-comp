@@ -480,7 +480,6 @@ void mml::type_checker::do_declaration_node(mml::declaration_node *const node,
     default:
       throw std::string("wrong redeclaration of variable " + node->identifier());
     }
-    _symtab.replace(node->identifier(), new_symbol);
   }
   _parent->set_new_symbol(new_symbol);
 }
