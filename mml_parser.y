@@ -138,7 +138,7 @@ void_pointer : '[' void_pointer ']'               { $$ = $2; }
              | '[' void_type ']'                  { $$ = cdk::reference_type::create(4, $2); }
              ;
 
-void_type : tVOID_TYPE                            { $$ = cdk::primitive_type::create(4, cdk::TYPE_VOID); }
+void_type : tVOID_TYPE                            { $$ = cdk::primitive_type::create(0, cdk::TYPE_VOID); }
           ;
 
 return_type : var_type                            { $$ = $1; }
