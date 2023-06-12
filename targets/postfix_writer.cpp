@@ -763,7 +763,6 @@ void mml::postfix_writer::do_function_definition_node(
   ASSERT_SAFE_EXPRESSIONS;
   node->main() ? processMainFunction(node, lvl) : processNonMainFunction(node, lvl);
 }
-// TODO: we shouldn't always return 0, main may actually return something else
 void mml::postfix_writer::processMainFunction(
     mml::function_definition_node *const node, int lvl) {
   for (auto s_name: _symbolsToDeclare) {
