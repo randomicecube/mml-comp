@@ -448,9 +448,7 @@ void mml::type_checker::do_declaration_node(mml::declaration_node *const node,
   if (!_symtab.insert(node->identifier(), new_symbol)) {
     // in this case, we are redeclaring a variable
     const auto previous_symbol = _symtab.find_local(node->identifier());
-    if (previous_symbol->qualifier() != tFORWARD)
-      throw std::string("cannot redeclare non-forward variable '" + node->identifier() + "'");
-    else if (!check_compatible_types(new_symbol->type(), previous_symbol->type()))
+    if (previous_symbol->type()->name() != node->type()->name())
       throw std::string("cannot redeclare variable '" + node->identifier() + "' with incompatible type");
     _symtab.replace(node->identifier(), new_symbol);
   }
