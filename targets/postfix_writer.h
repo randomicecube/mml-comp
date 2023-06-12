@@ -27,6 +27,7 @@ class postfix_writer : public basic_ast_visitor {
   // semantic analysis
   bool _inFunctionBody = false;
   bool _inFunctionArgs = false;
+  bool _mainReturnSeen = false;
   // while labels -- for break/continue; work like stacks
   std::vector<lbl> _whileCond, _whileEnd;
 

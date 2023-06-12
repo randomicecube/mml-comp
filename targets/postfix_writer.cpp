@@ -20,8 +20,10 @@ void mml::postfix_writer::do_data_node(cdk::data_node *const node, int lvl) {
 
 void mml::postfix_writer::do_integer_node(cdk::integer_node *const node,
                                           int lvl) {
-  if (_inFunctionBody)
+  if (_inFunctionBody) {
     _pf.INT(node->value());
+    std::cout << "Gonna put an int in the stack" << std::endl;
+  }
   else
     _pf.SINT(node->value());
 }
@@ -463,6 +465,7 @@ void mml::postfix_writer::do_return_node(mml::return_node *const node,
         _pf.I2D();
         _pf.STFVAL64();
       } else {
+        _mainReturnSeen = true;
         _pf.STFVAL32();
       }
       break;
@@ -806,9 +809,11 @@ void mml::postfix_writer::processMainFunction(
   _returnLabels.pop_back();
   _functionLabels.pop_back();
   _functions.pop_back();
+  if (!_mainReturnSeen) {
+    _pf.INT(0);
+    _pf.STFVAL32();
+  }
   _pf.LABEL(returnLabel);
-  _pf.INT(0);
-  _pf.STFVAL32();
   _pf.LEAVE();
   _pf.RET();
 
