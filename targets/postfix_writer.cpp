@@ -221,11 +221,11 @@ void mml::postfix_writer::do_mod_node(cdk::mod_node *const node, int lvl) {
 void mml::postfix_writer::processGeneralLogicalBinaryExpression(cdk::binary_operation_node *const node, int lvl) {
   ASSERT_SAFE_EXPRESSIONS;
   node->left()->accept(this, lvl + 2);
-  if (node->left()->is_typed(cdk::TYPE_DOUBLE) && !node->right()->is_typed(cdk::TYPE_DOUBLE))
+  if (!node->left()->is_typed(cdk::TYPE_DOUBLE) && node->is_typed(cdk::TYPE_DOUBLE))
     _pf.I2D();
   
   node->right()->accept(this, lvl + 2);
-  if (node->right()->is_typed(cdk::TYPE_DOUBLE) && !node->left()->is_typed(cdk::TYPE_DOUBLE))
+  if (!node->right()->is_typed(cdk::TYPE_DOUBLE) && node->is_typed(cdk::TYPE_DOUBLE))
     _pf.I2D();
   
   if (node->left()->is_typed(cdk::TYPE_DOUBLE) || node->right()->is_typed(cdk::TYPE_DOUBLE)) {
