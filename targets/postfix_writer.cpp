@@ -43,7 +43,7 @@ void mml::postfix_writer::do_double_node(cdk::double_node *const node,
     _pf.STFVAL64();
     _pf.LEAVE();
     _pf.RET();
-    _pf.TEXT(_bodyReturnLabels.back());
+    _pf.TEXT(_functionLabels.back());
     _pf.LDFVAL64();
   } else {
     _pf.SDOUBLE(node->value());    // double is on the DATA segment
@@ -61,7 +61,7 @@ void mml::postfix_writer::do_string_node(cdk::string_node *const node,
 
   if (_inFunctionBody) {
     // local variable initializer
-    _pf.TEXT(_bodyReturnLabels.back());  // return to the TEXT segment
+    _pf.TEXT(_functionLabels.back());  // return to the TEXT segment
     _pf.ADDR(lbl);                       // the string to be printed
   } else {
     // global variable initializer
@@ -446,7 +446,6 @@ void mml::postfix_writer::do_return_node(mml::return_node *const node,
   ASSERT_SAFE_EXPRESSIONS;
 
   // should not reach here without returning a value (if not void)
-  _returnSeen = true;
   const auto current_function_type_name = cdk::functional_type::cast(
     _functions.back()->type()
   )->output(0)->name();
@@ -482,8 +481,7 @@ void mml::postfix_writer::do_return_node(mml::return_node *const node,
     }
   }
 
-  _pf.LEAVE(); // leaves the function, destroys its local stack data
-  _pf.RET(); // returns from a function -- the value being returned has been removed from the stack
+  _pf.JMP(_returnLabels.back());
 }
 
 //---------------------------------------------------------------------------
@@ -597,8 +595,7 @@ void mml::postfix_writer::processGlobalVariableInitialization(std::shared_ptr<mm
       if (symbol->qualifier() == tPUBLIC) // TODO: is this needed?
         _pf.GLOBAL(symbol->name(), _pf.OBJ());
       _pf.LABEL(symbol->name());
-      _pf.SADDR(_currentBodyReturnLabel);
-      _currentBodyReturnLabel.clear();
+      _pf.SADDR(_functionLabels.back());
       break;
     default:
       error(initializer->lineno(), "invalid type for variable initialization");
@@ -722,7 +719,7 @@ void mml::postfix_writer::do_function_call_node(
       _pf.CALL(_currentForwardLabel);
   } else {
     // recursive calls
-    _pf.CALL(_bodyReturnLabels.back());
+    _pf.CALL(_functionLabels.back());
   }
 
   if (args_size > 0)
@@ -765,6 +762,7 @@ void mml::postfix_writer::do_function_definition_node(
   ASSERT_SAFE_EXPRESSIONS;
   node->main() ? processMainFunction(node, lvl) : processNonMainFunction(node, lvl);
 }
+// TODO: we shouldn't always return 0, main may actually return something else
 void mml::postfix_writer::processMainFunction(
     mml::function_definition_node *const node, int lvl) {
   for (auto s_name: _symbolsToDeclare) {
@@ -778,15 +776,18 @@ void mml::postfix_writer::processMainFunction(
       _pf.SALLOC(symbol->type()->size());
     }            
   }
+
   // Note that it's ok to name the function _main, as no variable may have underscores
   const auto main = mml::make_symbol(cdk::functional_type::create(cdk::primitive_type::create(4, cdk::TYPE_INT)), "_main", 0, tPRIVATE);
   _symtab.insert(main->name(), main);
   _functions.push_back(main);
-  _bodyReturnLabels.push_back("_main");
+  _functionLabels.push_back("_main");
+  const auto returnLabel = mklbl(++_lbl);
+  _returnLabels.push_back(returnLabel);
 
   // generate the main function itself
   _symtab.push(); // entering new context
-  _pf.TEXT(_bodyReturnLabels.back());
+  _pf.TEXT("_main");
   _pf.ALIGN();
   _pf.GLOBAL("_main", _pf.FUNC());
   _pf.LABEL("_main");
@@ -797,25 +798,22 @@ void mml::postfix_writer::processMainFunction(
   _pf.ENTER(fsc.localsize());
 
   _inFunctionBody = true;
-  const bool previous_return_seen = _returnSeen;
-  _returnSeen = false;
   node->block()->accept(this, lvl + 2);
   _inFunctionBody = false;
 
   _symtab.pop(); // leaving context
-  _bodyReturnLabels.pop_back();
-  if (!_returnSeen) {
-    // programmers aren't forced to return anything in main; by default, we return 0
-    _pf.INT(0);
-    _pf.STFVAL32();
-    _pf.LEAVE();
-    _pf.RET();
-  }
 
+  _returnLabels.pop_back();
+  _functionLabels.pop_back();
   _functions.pop_back();
+  _pf.LABEL(returnLabel);
+  _pf.INT(0);
+  _pf.STFVAL32();
+  _pf.LEAVE();
+  _pf.RET();
+
   for (auto forwarded_function: _functionsToDeclare)
     _pf.EXTERN(forwarded_function);
-  _returnSeen = previous_return_seen;
 }
 void mml::postfix_writer::processNonMainFunction(
     mml::function_definition_node *const node, int lvl) {
@@ -827,6 +825,11 @@ void mml::postfix_writer::processNonMainFunction(
     _symtab.insert(function->name(), function);
   }
   _functions.push_back(function);
+
+  const auto functionLabel = mklbl(++_lbl);
+  _functionLabels.push_back(functionLabel);
+  const auto returnLabel = mklbl(++_lbl);
+  _returnLabels.push_back(returnLabel);
 
   _offset = 8; // prepare for arguments (4: remember to account for return address)
 
@@ -841,11 +844,9 @@ void mml::postfix_writer::processNonMainFunction(
     _inFunctionArgs = false;
   }
 
-  const auto currentBodyReturnLabel = mklbl(++_lbl);
-  _bodyReturnLabels.push_back(currentBodyReturnLabel);
-  _pf.TEXT(currentBodyReturnLabel);
+  _pf.TEXT(functionLabel);
   _pf.ALIGN();
-  _pf.LABEL(currentBodyReturnLabel);
+  _pf.LABEL(functionLabel);
 
   // compute stack size to be reserved for local variables
   frame_size_calculator fsc(_compiler, _symtab, function);
@@ -860,18 +861,17 @@ void mml::postfix_writer::processNonMainFunction(
   _inFunctionBody = _previouslyInFunctionBody;
   _symtab.pop(); // leaving args scope
 
-  if (!_returnSeen) {
-    _pf.LEAVE();
-    _pf.RET();
-  }
-
-  _bodyReturnLabels.pop_back();
-  _currentBodyReturnLabel = currentBodyReturnLabel;
+  _returnLabels.pop_back();
   if (function)
     _functions.pop_back();
+
+  _pf.LABEL(returnLabel);
+  _pf.LEAVE();
+  _pf.RET();
   
   if (_inFunctionBody) {
-    _pf.TEXT(_bodyReturnLabels.back());
-    _pf.ADDR(_currentBodyReturnLabel);
+    _functionLabels.pop_back();
+    _pf.TEXT(_functionLabels.back());
+    _pf.ADDR(functionLabel);
   }
 }

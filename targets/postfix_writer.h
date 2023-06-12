@@ -27,13 +27,13 @@ class postfix_writer : public basic_ast_visitor {
   // semantic analysis
   bool _inFunctionBody = false;
   bool _inFunctionArgs = false;
-  bool _returnSeen = false; // when building a function
   // while labels -- for break/continue; work like stacks
   std::vector<lbl> _whileCond, _whileEnd;
 
   // where to jump when a return occurs or an exclusive section ends
-  std::vector<std::string> _bodyReturnLabels;
-  std::string _currentBodyReturnLabel;
+  std::vector<std::string> _returnLabels;
+  // if we want to return to a function's segment, we need to know the label
+  std::vector<std::string> _functionLabels;
   // a given forwarded function's label, as we want to call it, not branch to it
   std::string _currentForwardLabel;
   // for keeping track of functions and their arguments
