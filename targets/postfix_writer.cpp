@@ -28,26 +28,10 @@ void mml::postfix_writer::do_integer_node(cdk::integer_node *const node,
 void mml::postfix_writer::do_double_node(cdk::double_node *const node,
                                          int lvl) {
   const auto lbl = mklbl(++_lbl);
-  if (_inFunctionBody) {
-    // NOTE: both here, in strings and in function definitions, when we enter
-    // other segments, we still need to be able to come back to our previous
-    // label (instead of a random text segment)
-    // in doubles in particular it's weird, as we enter an unnamed text segment
-    // for (seemingly) no good reason if we're in a function body
-    _pf.CALL(lbl);
-    _pf.TEXT();
-    _pf.ALIGN();
-    _pf.LABEL(lbl);
-    _pf.START();
+  if (_inFunctionBody)
     _pf.DOUBLE(node->value());     // load number to the stack
-    _pf.STFVAL64();
-    _pf.LEAVE();
-    _pf.RET();
-    _pf.TEXT(_functionLabels.back());
-    _pf.LDFVAL64();
-  } else {
+  else
     _pf.SDOUBLE(node->value());    // double is on the DATA segment
-  }
 }
 void mml::postfix_writer::do_string_node(cdk::string_node *const node,
                                          int lvl) {
