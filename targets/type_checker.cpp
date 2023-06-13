@@ -120,6 +120,7 @@ void mml::type_checker::hint_type(cdk::typed_node *const lvalue, cdk::typed_node
 
 //---------------------------------------------------------------------------
 // NOTE: these methods were adapted from the provided type_checker.cpp, in OG
+// I don't like them aesthetically either, but they work
 
 // returns false if not correctly processed
 bool mml::type_checker::processBinaryExpression(cdk::binary_operation_node *const node, int lvl) {
@@ -346,7 +347,6 @@ void mml::type_checker::do_assignment_node(cdk::assignment_node *const node,
   node->lvalue()->accept(this, lvl + 2);
   node->rvalue()->accept(this, lvl + 2);
 
-
   hint_type(node->lvalue(), node->rvalue());
   const auto lval_type = node->lvalue()->type();
   const auto rval_type = node->rvalue()->type();
@@ -442,6 +442,7 @@ void mml::type_checker::do_declaration_node(mml::declaration_node *const node,
   if (!_symtab.insert(node->identifier(), new_symbol)) {
     // in this case, we are redeclaring a variable
     const auto previous_symbol = _symtab.find_local(node->identifier());
+    // the redeclared type must be the exact same
     if (previous_symbol->type()->name() != node->type()->name())
       throw std::string("cannot redeclare variable '" + node->identifier() + "' with incompatible type");
     _symtab.replace(node->identifier(), new_symbol);
@@ -486,8 +487,7 @@ void mml::type_checker::do_index_node(mml::index_node *const node, int lvl) {
   node->index()->accept(this, lvl + 2);
   if (!node->index()->is_typed(cdk::TYPE_INT))
     throw std::string("wrong type in index of index expression");
-  const std::shared_ptr<cdk::basic_type> base_ref =
-      cdk::reference_type::cast(node->base()->type())->referenced();
+  const auto base_ref = cdk::reference_type::cast(node->base()->type())->referenced();
   node->type(base_ref);
 }
 
@@ -529,10 +529,7 @@ void mml::type_checker::do_function_call_node(
   } else { // recursive call (@)
     auto symbol = _symtab.find("@");
     if (!symbol) {
-      auto main = _symtab.find("_main");
-      if (main)
-        throw std::string("recursive call in main function");
-      throw std::string("recursive call to undeclared function");
+      throw std::string("recursive call not allowed in the current scope");
     }
     const auto &type = symbol->type();
     args_types = cdk::functional_type::cast(type)->input()->components();
