@@ -481,7 +481,8 @@ void mml::postfix_writer::do_return_node(mml::return_node *const node,
     }
   }
 
-  _pf.JMP(_returnLabels.back());
+  _pf.LEAVE();
+  _pf.RET();
 }
 
 //---------------------------------------------------------------------------
@@ -793,8 +794,6 @@ void mml::postfix_writer::processMainFunction(
   _symtab.insert(main->name(), main);
   _functions.push_back(main);
   _functionLabels.push_back("_main");
-  const auto returnLabel = mklbl(++_lbl);
-  _returnLabels.push_back(returnLabel);
 
   // generate the main function itself
   _symtab.push(); // entering new context
@@ -814,14 +813,12 @@ void mml::postfix_writer::processMainFunction(
 
   _symtab.pop(); // leaving context
 
-  _returnLabels.pop_back();
   _functionLabels.pop_back();
   _functions.pop_back();
   if (!_mainReturnSeen) {
     _pf.INT(0);
     _pf.STFVAL32();
   }
-  _pf.LABEL(returnLabel);
   _pf.LEAVE();
   _pf.RET();
 
@@ -841,8 +838,6 @@ void mml::postfix_writer::processNonMainFunction(
 
   const auto functionLabel = mklbl(++_lbl);
   _functionLabels.push_back(functionLabel);
-  const auto returnLabel = mklbl(++_lbl);
-  _returnLabels.push_back(returnLabel);
 
   _offset =
       8; // prepare for arguments (4: remember to account for return address)
@@ -872,11 +867,9 @@ void mml::postfix_writer::processNonMainFunction(
   _inFunctionBody = _previouslyInFunctionBody;
   _symtab.pop(); // leaving args scope
 
-  _returnLabels.pop_back();
   if (function)
     _functions.pop_back();
 
-  _pf.LABEL(returnLabel);
   _pf.LEAVE();
   _pf.RET();
 
