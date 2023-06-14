@@ -380,6 +380,13 @@ void mml::type_checker::do_evaluation_node(mml::evaluation_node *const node,
 
 void mml::type_checker::do_print_node(mml::print_node *const node, int lvl) {
   node->arguments()->accept(this, lvl + 2);
+  for (auto *node : node->arguments()->nodes()) {
+    const auto &type = (dynamic_cast<cdk::expression_node *>(node))->type();
+    if (!(type->name() == cdk::TYPE_INT || type->name() == cdk::TYPE_DOUBLE ||
+          type->name() == cdk::TYPE_STRING)) {
+      throw std::string("wrong type in argument of print expression");
+    }
+  }
 }
 
 //---------------------------------------------------------------------------
@@ -582,6 +589,6 @@ void mml::type_checker::do_function_call_node(
 
 void mml::type_checker::do_function_definition_node(
     mml::function_definition_node *const node, int lvl) {
-  // Purposefully empty, as the type of the function's definition is set in the
-  // node's constructor
+  // Purposefully empty, as the type of the function's definition is set in
+  // the node's constructor
 }
