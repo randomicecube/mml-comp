@@ -11,21 +11,24 @@
       return;                                                                  \
   }
 
-bool mml::type_checker::check_compatible_ptr_types(std::shared_ptr<cdk::basic_type> t1,
-                          std::shared_ptr<cdk::basic_type> t2) {
+bool mml::type_checker::check_compatible_ptr_types(
+    std::shared_ptr<cdk::basic_type> t1, std::shared_ptr<cdk::basic_type> t2) {
   auto t1_ptr = t1;
   auto t2_ptr = t2;
-  while (t1_ptr->name() == cdk::TYPE_POINTER && t2_ptr->name() == cdk::TYPE_POINTER) {
+  while (t1_ptr->name() == cdk::TYPE_POINTER &&
+         t2_ptr->name() == cdk::TYPE_POINTER) {
     t1_ptr = cdk::reference_type::cast(t1_ptr)->referenced();
     t2_ptr = cdk::reference_type::cast(t2_ptr)->referenced();
   }
   return t1_ptr->name() == t2_ptr->name() || t2_ptr->name() == cdk::TYPE_UNSPEC;
 }
 
-bool mml::type_checker::check_compatible_fun_types(std::shared_ptr<cdk::functional_type> t1,
-                          std::shared_ptr<cdk::functional_type> t2) {
+bool mml::type_checker::check_compatible_fun_types(
+    std::shared_ptr<cdk::functional_type> t1,
+    std::shared_ptr<cdk::functional_type> t2) {
   // the return type must be compatible
-  if ((t1->output_length() > 0 && t2->output_length() > 0) && !check_compatible_types(t1->output(0), t2->output(0)))
+  if ((t1->output_length() > 0 && t2->output_length() > 0) &&
+      !check_compatible_types(t1->output(0), t2->output(0)))
     return false;
 
   // the number of arguments must be the same
@@ -39,8 +42,9 @@ bool mml::type_checker::check_compatible_fun_types(std::shared_ptr<cdk::function
   return true;
 }
 
-bool mml::type_checker::check_compatible_types(std::shared_ptr<cdk::basic_type> t1,
-                      std::shared_ptr<cdk::basic_type> t2, bool is_return) {
+bool mml::type_checker::check_compatible_types(
+    std::shared_ptr<cdk::basic_type> t1, std::shared_ptr<cdk::basic_type> t2,
+    bool is_return) {
   const auto t1_name = t1->name();
   const auto t2_name = t2->name();
   switch (t1_name) {
@@ -54,14 +58,16 @@ bool mml::type_checker::check_compatible_types(std::shared_ptr<cdk::basic_type> 
       return false;
     break;
   case cdk::TYPE_POINTER:
-    if (is_return == (t2_name == cdk::TYPE_POINTER) && !check_compatible_ptr_types(t1, t2))
+    if (is_return == (t2_name == cdk::TYPE_POINTER) &&
+        !check_compatible_ptr_types(t1, t2))
       return false;
     break;
   case cdk::TYPE_FUNCTIONAL:
-    if (!(
-      (t2_name == cdk::TYPE_FUNCTIONAL && check_compatible_fun_types(cdk::functional_type::cast(t1), cdk::functional_type::cast(t2))) ||
-      (t2_name == cdk::TYPE_POINTER && cdk::reference_type::cast(t2)->referenced() == nullptr)
-    ))
+    if (!((t2_name == cdk::TYPE_FUNCTIONAL &&
+           check_compatible_fun_types(cdk::functional_type::cast(t1),
+                                      cdk::functional_type::cast(t2))) ||
+          (t2_name == cdk::TYPE_POINTER &&
+           cdk::reference_type::cast(t2)->referenced() == nullptr)))
       return false;
     break;
   case cdk::TYPE_UNSPEC: // useful for auto cases
@@ -76,17 +82,19 @@ bool mml::type_checker::check_compatible_types(std::shared_ptr<cdk::basic_type> 
   return true;
 }
 
-void mml::type_checker::throw_incompatible_types(std::shared_ptr<cdk::basic_type> t1,
-                           std::shared_ptr<cdk::basic_type> t2,
-                           bool is_return) {
+void mml::type_checker::throw_incompatible_types(
+    std::shared_ptr<cdk::basic_type> t1, std::shared_ptr<cdk::basic_type> t2,
+    bool is_return) {
   if (check_compatible_types(t1, t2))
     return;
 
-  const std::string field_name = is_return ? "return" : "initialization"; // hacky
+  const std::string field_name =
+      is_return ? "return" : "initialization"; // hacky
   switch (t1->name()) {
   case cdk::TYPE_INT:
   case cdk::TYPE_DOUBLE:
-    throw std::string("wrong type in " + field_name + " (expected double or int)");
+    throw std::string("wrong type in " + field_name +
+                      " (expected double or int)");
   case cdk::TYPE_STRING:
     throw std::string("wrong type in " + field_name + " (expected string)");
   case cdk::TYPE_POINTER:
@@ -98,25 +106,24 @@ void mml::type_checker::throw_incompatible_types(std::shared_ptr<cdk::basic_type
   }
 }
 
-void mml::type_checker::hint_type(cdk::typed_node *const lvalue, cdk::typed_node *const rvalue) {
+void mml::type_checker::hint_type(cdk::typed_node *const lvalue,
+                                  cdk::typed_node *const rvalue) {
   const auto ltype = lvalue->type();
   const auto rtype = rvalue->type();
   if (ltype->name() == cdk::TYPE_UNSPEC && rtype->name() == cdk::TYPE_UNSPEC) {
     // auto x = input;
     lvalue->type(cdk::primitive_type::create(4, cdk::TYPE_INT));
     rvalue->type(cdk::primitive_type::create(4, cdk::TYPE_INT));
-  } else if ((
-    ltype->name() == cdk::TYPE_POINTER && 
-    rtype->name() == cdk::TYPE_POINTER &&
-    check_compatible_ptr_types(ltype, rtype)
-  ) || (
-    ltype->name() == cdk::TYPE_FUNCTIONAL &&
-    rtype->name() == cdk::TYPE_FUNCTIONAL &&
-    check_compatible_fun_types(cdk::functional_type::cast(ltype), cdk::functional_type::cast(rtype))
-  ) || (
-    (ltype->name() == cdk::TYPE_INT || ltype->name() == cdk::TYPE_DOUBLE) &&
-    rtype->name() == cdk::TYPE_UNSPEC
-  )) {
+  } else if ((ltype->name() == cdk::TYPE_POINTER &&
+              rtype->name() == cdk::TYPE_POINTER &&
+              check_compatible_ptr_types(ltype, rtype)) ||
+             (ltype->name() == cdk::TYPE_FUNCTIONAL &&
+              rtype->name() == cdk::TYPE_FUNCTIONAL &&
+              check_compatible_fun_types(cdk::functional_type::cast(ltype),
+                                         cdk::functional_type::cast(rtype))) ||
+             ((ltype->name() == cdk::TYPE_INT ||
+               ltype->name() == cdk::TYPE_DOUBLE) &&
+              rtype->name() == cdk::TYPE_UNSPEC)) {
     rvalue->type(ltype);
   }
 }
@@ -126,15 +133,17 @@ void mml::type_checker::hint_type(cdk::typed_node *const lvalue, cdk::typed_node
 // I don't like them aesthetically either, but they work
 
 // returns false if not correctly processed
-bool mml::type_checker::processBinaryExpression(cdk::binary_operation_node *const node, int lvl) {
+bool mml::type_checker::processBinaryExpression(
+    cdk::binary_operation_node *const node, int lvl) {
   node->left()->accept(this, lvl + 2);
   node->right()->accept(this, lvl + 2);
 
-  if (
-    (node->left()->is_typed(cdk::TYPE_DOUBLE) && node->right()->is_typed(cdk::TYPE_DOUBLE)) ||
-    (node->left()->is_typed(cdk::TYPE_DOUBLE) && node->right()->is_typed(cdk::TYPE_INT)) ||
-    (node->left()->is_typed(cdk::TYPE_INT) && node->right()->is_typed(cdk::TYPE_DOUBLE))
-  ) {
+  if ((node->left()->is_typed(cdk::TYPE_DOUBLE) &&
+       node->right()->is_typed(cdk::TYPE_DOUBLE)) ||
+      (node->left()->is_typed(cdk::TYPE_DOUBLE) &&
+       node->right()->is_typed(cdk::TYPE_INT)) ||
+      (node->left()->is_typed(cdk::TYPE_INT) &&
+       node->right()->is_typed(cdk::TYPE_DOUBLE))) {
     node->type(cdk::primitive_type::create(8, cdk::TYPE_DOUBLE));
   } else if (node->left()->is_typed(cdk::TYPE_INT) &&
              node->right()->is_typed(cdk::TYPE_INT)) {
@@ -175,21 +184,23 @@ void mml::type_checker::processAdditiveBinaryExpression(
   ASSERT_UNSPEC;
   if (processBinaryExpression(node, lvl))
     return;
-  
-  if (node->left()->is_typed(cdk::TYPE_POINTER) && node->right()->is_typed(cdk::TYPE_INT)) {
+
+  if (node->left()->is_typed(cdk::TYPE_POINTER) &&
+      node->right()->is_typed(cdk::TYPE_INT)) {
     node->type(node->left()->type());
-  } else if (node->left()->is_typed(cdk::TYPE_INT) && node->right()->is_typed(cdk::TYPE_POINTER)) {
+  } else if (node->left()->is_typed(cdk::TYPE_INT) &&
+             node->right()->is_typed(cdk::TYPE_POINTER)) {
     node->type(node->right()->type());
   } else {
-		if (isSub) {
-      if (
-        (node->left()->is_typed(cdk::TYPE_POINTER) && node->right()->is_typed(cdk::TYPE_POINTER)) &&
-        (check_compatible_ptr_types(node->left()->type(), node->right()->type()))
-      ) {
+    if (isSub) {
+      if ((node->left()->is_typed(cdk::TYPE_POINTER) &&
+           node->right()->is_typed(cdk::TYPE_POINTER)) &&
+          (check_compatible_ptr_types(node->left()->type(),
+                                      node->right()->type()))) {
         node->type(cdk::primitive_type::create(4, cdk::TYPE_INT));
         return;
       }
-		}
+    }
     throw std::string("wrong types in binary expression");
   }
 }
@@ -208,7 +219,9 @@ void mml::type_checker::processEqualityBinaryExpression(
     cdk::binary_operation_node *const node, int lvl) {
   node->left()->accept(this, lvl + 2);
   node->right()->accept(this, lvl + 2);
-  if (!(processBinaryExpression(node, lvl) || check_compatible_ptr_types(node->left()->type(), node->right()->type()))) {
+  if (!(processBinaryExpression(node, lvl) ||
+        check_compatible_ptr_types(node->left()->type(),
+                                   node->right()->type()))) {
     throw std::string("same type expected on both sides of equality operator");
   }
   node->type(cdk::primitive_type::create(4, cdk::TYPE_INT));
@@ -422,7 +435,8 @@ void mml::type_checker::do_return_node(mml::return_node *const node, int lvl) {
 void mml::type_checker::do_nullptr_node(mml::nullptr_node *const node,
                                         int lvl) {
   ASSERT_UNSPEC;
-  node->type(cdk::reference_type::create(4, cdk::primitive_type::create(0, cdk::TYPE_VOID)));
+  node->type(cdk::reference_type::create(
+      4, cdk::primitive_type::create(0, cdk::TYPE_VOID)));
 }
 
 //---------------------------------------------------------------------------
@@ -442,13 +456,15 @@ void mml::type_checker::do_declaration_node(mml::declaration_node *const node,
     }
   }
 
-  const auto new_symbol = mml::make_symbol(node->type(), node->identifier(), (bool) node->init(), node->qualifier());
+  const auto new_symbol = mml::make_symbol(
+      node->type(), node->identifier(), (bool)node->init(), node->qualifier());
   if (!_symtab.insert(node->identifier(), new_symbol)) {
     // in this case, we are redeclaring a variable
     const auto previous_symbol = _symtab.find_local(node->identifier());
     // the redeclared type must be the exact same
     if (previous_symbol->type()->name() != node->type()->name())
-      throw std::string("cannot redeclare variable '" + node->identifier() + "' with incompatible type");
+      throw std::string("cannot redeclare variable '" + node->identifier() +
+                        "' with incompatible type");
     _symtab.replace(node->identifier(), new_symbol);
   }
   _parent->set_new_symbol(new_symbol);
@@ -491,7 +507,8 @@ void mml::type_checker::do_index_node(mml::index_node *const node, int lvl) {
   node->index()->accept(this, lvl + 2);
   if (!node->index()->is_typed(cdk::TYPE_INT))
     throw std::string("wrong type in index of index expression");
-  const auto base_ref = cdk::reference_type::cast(node->base()->type())->referenced();
+  const auto base_ref =
+      cdk::reference_type::cast(node->base()->type())->referenced();
   node->type(base_ref);
 }
 
@@ -503,7 +520,8 @@ void mml::type_checker::do_stack_alloc_node(mml::stack_alloc_node *const node,
   node->argument()->accept(this, lvl + 2);
   if (!node->argument()->is_typed(cdk::TYPE_INT))
     throw std::string("wrong type in argument of stack_alloc expression");
-  node->type(cdk::reference_type::create(4, cdk::primitive_type::create(0, cdk::TYPE_UNSPEC)));
+  node->type(cdk::reference_type::create(
+      4, cdk::primitive_type::create(0, cdk::TYPE_UNSPEC)));
 }
 
 //---------------------------------------------------------------------------
@@ -542,16 +560,18 @@ void mml::type_checker::do_function_call_node(
 
   if (node->arguments()) {
     if (args_types.size() != node->arguments()->size())
-      throw std::string("wrong number of arguments in function call expression");
+      throw std::string(
+          "wrong number of arguments in function call expression");
     node->arguments()->accept(this, lvl + 2);
 
     for (size_t i = 0; i < args_types.size(); i++) {
-      const auto &param_type = dynamic_cast<cdk::expression_node *>(node->arguments()->node(i))->type();
+      const auto &param_type =
+          dynamic_cast<cdk::expression_node *>(node->arguments()->node(i))
+              ->type();
       // note that the second condition is to allow passing an int as a double
-      if (
-        (args_types[i] == param_type) ||
-        (args_types[i]->name() == cdk::TYPE_DOUBLE && param_type->name() == cdk::TYPE_INT)
-      )
+      if ((args_types[i] == param_type) ||
+          (args_types[i]->name() == cdk::TYPE_DOUBLE &&
+           param_type->name() == cdk::TYPE_INT))
         continue;
       throw std::string("wrong type in argument of function call expression");
     }
@@ -562,5 +582,6 @@ void mml::type_checker::do_function_call_node(
 
 void mml::type_checker::do_function_definition_node(
     mml::function_definition_node *const node, int lvl) {
-  // Purposefully empty, as the type of the function's definition is set in the node's constructor
+  // Purposefully empty, as the type of the function's definition is set in the
+  // node's constructor
 }

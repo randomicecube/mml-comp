@@ -1,7 +1,7 @@
 #include "targets/postfix_writer.h"
 #include ".auto/all_nodes.h" // all_nodes.h is automatically generated
-#include "targets/type_checker.h"
 #include "targets/frame_size_calculator.h"
+#include "targets/type_checker.h"
 #include <sstream>
 #include <string>
 
@@ -38,19 +38,19 @@ void mml::postfix_writer::do_string_node(cdk::string_node *const node,
   const auto lbl = mklbl(++_lbl);
 
   /* generate the string */
-  _pf.RODATA();                    // strings are DATA readonly
-  _pf.ALIGN();                     // make sure we are aligned
-  _pf.LABEL(lbl);                  // give the string a name
-  _pf.SSTRING(node->value());      // output string characters
+  _pf.RODATA();               // strings are DATA readonly
+  _pf.ALIGN();                // make sure we are aligned
+  _pf.LABEL(lbl);             // give the string a name
+  _pf.SSTRING(node->value()); // output string characters
 
   if (_inFunctionBody) {
     // local variable initializer
-    _pf.TEXT(_functionLabels.back());  // return to the TEXT segment
-    _pf.ADDR(lbl);                     // the string to be printed
+    _pf.TEXT(_functionLabels.back()); // return to the TEXT segment
+    _pf.ADDR(lbl);                    // the string to be printed
   } else {
     // global variable initializer
-    _pf.DATA();                    // return to the DATA segment
-    _pf.SADDR(lbl);                // the string to be printed
+    _pf.DATA();     // return to the DATA segment
+    _pf.SADDR(lbl); // the string to be printed
   }
 }
 void mml::postfix_writer::do_nullptr_node(mml::nullptr_node *const node,
@@ -79,7 +79,7 @@ void mml::postfix_writer::do_neg_node(cdk::neg_node *const node, int lvl) {
 void mml::postfix_writer::do_not_node(cdk::not_node *const node, int lvl) {
   ASSERT_SAFE_EXPRESSIONS;
   node->argument()->accept(this, lvl + 2); // the value we want to compare
-  _pf.INT(0); // we want to compare it to false
+  _pf.INT(0);                              // we want to compare it to false
   _pf.EQ(); // checks whether the last two values on the stack are equal
 }
 
@@ -119,22 +119,29 @@ void mml::postfix_writer::do_sequence_node(cdk::sequence_node *const node,
 
 //---------------------------------------------------------------------------
 
-void mml::postfix_writer::processIDPBinaryExpression(cdk::binary_operation_node *const node, int lvl) {
+void mml::postfix_writer::processIDPBinaryExpression(
+    cdk::binary_operation_node *const node, int lvl) {
   ASSERT_SAFE_EXPRESSIONS;
   node->left()->accept(this, lvl + 2);
-  if (node->is_typed(cdk::TYPE_DOUBLE) && !node->left()->is_typed(cdk::TYPE_DOUBLE))
+  if (node->is_typed(cdk::TYPE_DOUBLE) &&
+      !node->left()->is_typed(cdk::TYPE_DOUBLE))
     _pf.I2D();
-  else if (node->is_typed(cdk::TYPE_POINTER) && !node->left()->is_typed(cdk::TYPE_POINTER)) {
-    const auto ref_right = cdk::reference_type::cast(node->right()->type())->referenced();
+  else if (node->is_typed(cdk::TYPE_POINTER) &&
+           !node->left()->is_typed(cdk::TYPE_POINTER)) {
+    const auto ref_right =
+        cdk::reference_type::cast(node->right()->type())->referenced();
     _pf.INT(ref_right->size());
     _pf.MUL();
   }
 
   node->right()->accept(this, lvl + 2);
-  if (node->is_typed(cdk::TYPE_DOUBLE) && !node->right()->is_typed(cdk::TYPE_DOUBLE))
+  if (node->is_typed(cdk::TYPE_DOUBLE) &&
+      !node->right()->is_typed(cdk::TYPE_DOUBLE))
     _pf.I2D();
-  else if (node->is_typed(cdk::TYPE_POINTER) && !node->right()->is_typed(cdk::TYPE_POINTER)) {
-    const auto ref_left = cdk::reference_type::cast(node->left()->type())->referenced();
+  else if (node->is_typed(cdk::TYPE_POINTER) &&
+           !node->right()->is_typed(cdk::TYPE_POINTER)) {
+    const auto ref_left =
+        cdk::reference_type::cast(node->left()->type())->referenced();
     _pf.INT(ref_left->size());
     _pf.MUL();
   }
@@ -153,11 +160,13 @@ void mml::postfix_writer::do_sub_node(cdk::sub_node *const node, int lvl) {
   if (!node->is_typed(cdk::TYPE_DOUBLE)) {
     _pf.SUB();
     // pointer - pointer requires a special treatment
-    if (
-      (node->left()->is_typed(cdk::TYPE_POINTER) && node->right()->is_typed(cdk::TYPE_POINTER)) &&
-      cdk::reference_type::cast(node->left()->type())->referenced()->name() != cdk::TYPE_VOID
-    ) {
-      _pf.INT(cdk::reference_type::cast(node->left()->type())->referenced()->size());
+    if ((node->left()->is_typed(cdk::TYPE_POINTER) &&
+         node->right()->is_typed(cdk::TYPE_POINTER)) &&
+        cdk::reference_type::cast(node->left()->type())->referenced()->name() !=
+            cdk::TYPE_VOID) {
+      _pf.INT(cdk::reference_type::cast(node->left()->type())
+                  ->referenced()
+                  ->size());
       _pf.DIV();
     }
   } else {
@@ -167,14 +176,17 @@ void mml::postfix_writer::do_sub_node(cdk::sub_node *const node, int lvl) {
 
 //---------------------------------------------------------------------------
 
-void mml::postfix_writer::processIDBinaryExpression(cdk::binary_operation_node *const node, int lvl) {
+void mml::postfix_writer::processIDBinaryExpression(
+    cdk::binary_operation_node *const node, int lvl) {
   ASSERT_SAFE_EXPRESSIONS;
   node->left()->accept(this, lvl + 2);
-  if (node->is_typed(cdk::TYPE_DOUBLE) && !node->left()->is_typed(cdk::TYPE_DOUBLE))
+  if (node->is_typed(cdk::TYPE_DOUBLE) &&
+      !node->left()->is_typed(cdk::TYPE_DOUBLE))
     _pf.I2D();
 
   node->right()->accept(this, lvl + 2);
-  if (node->is_typed(cdk::TYPE_DOUBLE) && !node->right()->is_typed(cdk::TYPE_DOUBLE))
+  if (node->is_typed(cdk::TYPE_DOUBLE) &&
+      !node->right()->is_typed(cdk::TYPE_DOUBLE))
     _pf.I2D();
 }
 void mml::postfix_writer::do_mul_node(cdk::mul_node *const node, int lvl) {
@@ -202,17 +214,21 @@ void mml::postfix_writer::do_mod_node(cdk::mod_node *const node, int lvl) {
 
 //---------------------------------------------------------------------------
 
-void mml::postfix_writer::processGeneralLogicalBinaryExpression(cdk::binary_operation_node *const node, int lvl) {
+void mml::postfix_writer::processGeneralLogicalBinaryExpression(
+    cdk::binary_operation_node *const node, int lvl) {
   ASSERT_SAFE_EXPRESSIONS;
   node->left()->accept(this, lvl + 2);
-  if (!node->left()->is_typed(cdk::TYPE_DOUBLE) && node->is_typed(cdk::TYPE_DOUBLE))
+  if (!node->left()->is_typed(cdk::TYPE_DOUBLE) &&
+      node->is_typed(cdk::TYPE_DOUBLE))
     _pf.I2D();
-  
+
   node->right()->accept(this, lvl + 2);
-  if (!node->right()->is_typed(cdk::TYPE_DOUBLE) && node->is_typed(cdk::TYPE_DOUBLE))
+  if (!node->right()->is_typed(cdk::TYPE_DOUBLE) &&
+      node->is_typed(cdk::TYPE_DOUBLE))
     _pf.I2D();
-  
-  if (node->left()->is_typed(cdk::TYPE_DOUBLE) || node->right()->is_typed(cdk::TYPE_DOUBLE)) {
+
+  if (node->left()->is_typed(cdk::TYPE_DOUBLE) ||
+      node->right()->is_typed(cdk::TYPE_DOUBLE)) {
     _pf.DCMP();
     _pf.INT(0);
   }
@@ -296,7 +312,6 @@ void mml::postfix_writer::do_assignment_node(cdk::assignment_node *const node,
     _pf.STINT();
   else
     _pf.STDOUBLE();
-
 }
 
 //---------------------------------------------------------------------------
@@ -304,31 +319,29 @@ void mml::postfix_writer::do_assignment_node(cdk::assignment_node *const node,
 void mml::postfix_writer::do_evaluation_node(mml::evaluation_node *const node,
                                              int lvl) {
   ASSERT_SAFE_EXPRESSIONS;
-  node->argument()->accept(this, lvl + 2); // determine the value
+  node->argument()->accept(this, lvl + 2);     // determine the value
   _pf.TRASH(node->argument()->type()->size()); // delete it
 }
 
 void mml::postfix_writer::do_print_node(mml::print_node *const node, int lvl) {
   ASSERT_SAFE_EXPRESSIONS;
   for (size_t ix = 0; ix < node->arguments()->size(); ix++) {
-    const auto arg = dynamic_cast<cdk::expression_node *>(node->arguments()->node(ix));
+    const auto arg =
+        dynamic_cast<cdk::expression_node *>(node->arguments()->node(ix));
     arg->accept(this, lvl); // determine the value to print
     if (arg->is_typed(cdk::TYPE_INT)) {
       _functionsToDeclare.insert("printi");
       _pf.CALL("printi");
       _pf.TRASH(4);
-    }
-    else if (arg->is_typed(cdk::TYPE_DOUBLE)) {
+    } else if (arg->is_typed(cdk::TYPE_DOUBLE)) {
       _functionsToDeclare.insert("printd");
       _pf.CALL("printd");
       _pf.TRASH(8);
-    }
-    else if (arg->is_typed(cdk::TYPE_STRING)) {
+    } else if (arg->is_typed(cdk::TYPE_STRING)) {
       _functionsToDeclare.insert("prints");
       _pf.CALL("prints");
       _pf.TRASH(4);
-    }
-    else
+    } else
       error(node->lineno(), "cannot print expression of unknown type");
   }
   if (node->newline()) {
@@ -343,24 +356,25 @@ void mml::postfix_writer::do_while_node(mml::while_node *const node, int lvl) {
   ASSERT_SAFE_EXPRESSIONS;
   int whileCondLbl = ++_lbl;
   int whileEndLbl = ++_lbl;
-  _whileCond.push_back(whileCondLbl); // the (currently) deepest while condition label
-  _whileEnd.push_back(whileEndLbl);   // the (currently) deepest while end label
+  _whileCond.push_back(
+      whileCondLbl); // the (currently) deepest while condition label
+  _whileEnd.push_back(whileEndLbl); // the (currently) deepest while end label
 
   _symtab.push(); // entering new context, new symbol table for block-local vars
 
-  _pf.ALIGN();   // make sure we are aligned
-  _pf.LABEL(mklbl(whileCondLbl)); // setting label for the condition
+  _pf.ALIGN();                              // make sure we are aligned
+  _pf.LABEL(mklbl(whileCondLbl));           // setting label for the condition
   node->condition()->accept(this, lvl + 2); // condition evaluation
-  _pf.JZ(mklbl(whileEndLbl)); // if false, exit the cycle
+  _pf.JZ(mklbl(whileEndLbl));               // if false, exit the cycle
 
   node->block()->accept(this, lvl + 2); // block evaluation
-  _pf.JMP(mklbl(whileCondLbl)); // repeat
-  _pf.ALIGN();   // make sure we are aligned
+  _pf.JMP(mklbl(whileCondLbl));         // repeat
+  _pf.ALIGN();                          // make sure we are aligned
   _pf.LABEL(mklbl(whileEndLbl)); // setting label for the end of the cycle
-  
-  _symtab.pop(); // leaving current context
+
+  _symtab.pop();         // leaving current context
   _whileCond.pop_back(); // leaving current while condition label
-  _whileEnd.pop_back(); // leaving current while end label
+  _whileEnd.pop_back();  // leaving current while end label
 }
 
 //---------------------------------------------------------------------------
@@ -397,7 +411,7 @@ void mml::postfix_writer::do_stop_node(mml::stop_node *const node, int lvl) {
     error(node->lineno(), "stop node found outside a while block");
     return;
   }
-  const size_t stopLvl = (size_t) node->level();
+  const size_t stopLvl = (size_t)node->level();
   if (stopLvl > whileLabels || stopLvl < 1) {
     error(node->lineno(), "invalid stop level");
     return;
@@ -414,7 +428,7 @@ void mml::postfix_writer::do_next_node(mml::next_node *const node, int lvl) {
     error(node->lineno(), "next node found outside a while block");
     return;
   }
-  const size_t nextLvl = (size_t) node->level();
+  const size_t nextLvl = (size_t)node->level();
   if (nextLvl > whileLabels || nextLvl < 1) {
     error(node->lineno(), "invalid next level");
     return;
@@ -430,18 +444,19 @@ void mml::postfix_writer::do_return_node(mml::return_node *const node,
   ASSERT_SAFE_EXPRESSIONS;
 
   // should not reach here without returning a value (if not void)
-  const auto current_function_type_name = cdk::functional_type::cast(
-    _functions.back()->type()
-  )->output(0)->name();
+  const auto current_function_type_name =
+      cdk::functional_type::cast(_functions.back()->type())->output(0)->name();
 
   if (current_function_type_name != cdk::TYPE_VOID) {
     node->retval()->accept(this, lvl + 2);
     switch (current_function_type_name) {
     case cdk::TYPE_INT:
-      // allowing covariant return types (i.e., double is considered a valid return type to cast from int)
-      // we'll always return doubles from non-main functions instead of ints, to allow covariance
-      // the second part of this logic is handled in the function call's visitor, where we _load_ the return value,
-      // which should be the address of the first instruction of the function being called
+      // allowing covariant return types (i.e., double is considered a valid
+      // return type to cast from int) we'll always return doubles from non-main
+      // functions instead of ints, to allow covariance the second part of this
+      // logic is handled in the function call's visitor, where we _load_ the
+      // return value, which should be the address of the first instruction of
+      // the function being called
       // !!! the exception is main, since it returns 0 (int) per convention
       if (_functions.back()->is_main()) {
         _mainReturnSeen = true;
@@ -458,7 +473,7 @@ void mml::postfix_writer::do_return_node(mml::return_node *const node,
       break;
     case cdk::TYPE_DOUBLE:
       if (!node->retval()->is_typed(cdk::TYPE_DOUBLE))
-        _pf.I2D(); // converts int to double
+        _pf.I2D();    // converts int to double
       _pf.STFVAL64(); // removes 8 bytes (a double) from the stack
       break;
     default:
@@ -476,9 +491,10 @@ void mml::postfix_writer::do_declaration_node(mml::declaration_node *const node,
   ASSERT_SAFE_EXPRESSIONS;
   const auto id = node->identifier();
   const auto type_size = node->type()->size(); // size in bytes
-  int offset = 0; // will be kept 0 if global
-  
-  // to understand offset logic, read: wiki + https://people.cs.rutgers.edu/~pxk/419/notes/frames.html
+  int offset = 0;                              // will be kept 0 if global
+
+  // to understand offset logic, read: wiki +
+  // https://people.cs.rutgers.edu/~pxk/419/notes/frames.html
   if (_inFunctionArgs) {
     // the function's arguments are placed in the stack by the caller
     offset = _offset;
@@ -505,73 +521,78 @@ void mml::postfix_writer::do_declaration_node(mml::declaration_node *const node,
   } else if (!_inFunctionArgs && !_inFunctionBody)
     _symbolsToDeclare.insert(symbol->name());
 }
-void mml::postfix_writer::processLocalVariableInitialization(std::shared_ptr<mml::symbol> symbol, cdk::expression_node *const initializer, int lvl) {
+void mml::postfix_writer::processLocalVariableInitialization(
+    std::shared_ptr<mml::symbol> symbol,
+    cdk::expression_node *const initializer, int lvl) {
   initializer->accept(this, lvl);
   switch (symbol->type()->name()) {
-    case cdk::TYPE_INT:
-    case cdk::TYPE_STRING:
-    case cdk::TYPE_POINTER:
-    case cdk::TYPE_FUNCTIONAL:
-    case cdk::TYPE_UNSPEC: // cases such as `auto x = input;`
-      _pf.LOCAL(symbol->offset());
-      _pf.STINT();
-      break;
-    case cdk::TYPE_DOUBLE:
-      if (initializer->is_typed(cdk::TYPE_INT))
-        _pf.I2D();
-      _pf.LOCAL(symbol->offset());
-      _pf.STDOUBLE();
-      break;
-    default:
-      error(initializer->lineno(), "invalid type for variable initialization");
+  case cdk::TYPE_INT:
+  case cdk::TYPE_STRING:
+  case cdk::TYPE_POINTER:
+  case cdk::TYPE_FUNCTIONAL:
+  case cdk::TYPE_UNSPEC: // cases such as `auto x = input;`
+    _pf.LOCAL(symbol->offset());
+    _pf.STINT();
+    break;
+  case cdk::TYPE_DOUBLE:
+    if (initializer->is_typed(cdk::TYPE_INT))
+      _pf.I2D();
+    _pf.LOCAL(symbol->offset());
+    _pf.STDOUBLE();
+    break;
+  default:
+    error(initializer->lineno(), "invalid type for variable initialization");
   }
 }
-void mml::postfix_writer::processGlobalVariableInitialization(std::shared_ptr<mml::symbol> symbol, cdk::expression_node *const initializer, int lvl) {
+void mml::postfix_writer::processGlobalVariableInitialization(
+    std::shared_ptr<mml::symbol> symbol,
+    cdk::expression_node *const initializer, int lvl) {
   switch (symbol->type()->name()) {
+  case cdk::TYPE_INT:
+  case cdk::TYPE_STRING:
+  case cdk::TYPE_POINTER:
+    _pf.DATA(); // Data segment, for global variables
+    _pf.ALIGN();
+    _pf.LABEL(symbol->name());
+    initializer->accept(this, lvl + 2);
+    break;
+  case cdk::TYPE_DOUBLE:
+    _pf.DATA(); // Data segment, for global variables
+    _pf.ALIGN();
+    _pf.LABEL(symbol->name());
+
+    // the following initializations need to be done outside of the switch
+    const cdk::integer_node *dclini;
+    cdk::double_node *ddi;
+    switch (initializer->type()->name()) {
     case cdk::TYPE_INT:
-    case cdk::TYPE_STRING:
-    case cdk::TYPE_POINTER:
-      _pf.DATA(); // Data segment, for global variables
-      _pf.ALIGN();
-      _pf.LABEL(symbol->name());
-      initializer->accept(this, lvl + 2);
+      // here, we actually want to initialize the variable with a double
+      // thus, we need to convert the expression to a double node
+      // NOTE: I don't like these variable names either, taken from DM
+      dclini = dynamic_cast<const cdk::integer_node *>(initializer);
+      ddi = new cdk::double_node(dclini->lineno(), dclini->value());
+      ddi->accept(this, lvl + 2);
       break;
     case cdk::TYPE_DOUBLE:
-      _pf.DATA(); // Data segment, for global variables
-      _pf.ALIGN();
-      _pf.LABEL(symbol->name());
-
-      // the following initializations need to be done outside of the switch
-      const cdk::integer_node *dclini;
-      cdk::double_node *ddi;
-      switch (initializer->type()->name()) {
-        case cdk::TYPE_INT:
-          // here, we actually want to initialize the variable with a double
-          // thus, we need to convert the expression to a double node
-          // NOTE: I don't like these variable names either, taken from DM
-          dclini = dynamic_cast<const cdk::integer_node*>(initializer);
-          ddi = new cdk::double_node(dclini->lineno(), dclini->value());
-          ddi->accept(this, lvl + 2);
-          break;
-        case cdk::TYPE_DOUBLE:
-          initializer->accept(this, lvl + 2);
-          break;
-        default:
-          error(initializer->lineno(), "invalid type for double variable initialization");
-      }
-      break;
-    case cdk::TYPE_FUNCTIONAL:
-      _functions.push_back(symbol);
-      initializer->accept(this, lvl);
-      _pf.DATA(); // Data segment, for global variables
-      _pf.ALIGN();
-      if (symbol->qualifier() == tPUBLIC)
-        _pf.GLOBAL(symbol->name(), _pf.OBJ());
-      _pf.LABEL(symbol->name());
-      _pf.SADDR(_functionLabels.back());
+      initializer->accept(this, lvl + 2);
       break;
     default:
-      error(initializer->lineno(), "invalid type for variable initialization");
+      error(initializer->lineno(),
+            "invalid type for double variable initialization");
+    }
+    break;
+  case cdk::TYPE_FUNCTIONAL:
+    _functions.push_back(symbol);
+    initializer->accept(this, lvl);
+    _pf.DATA(); // Data segment, for global variables
+    _pf.ALIGN();
+    if (symbol->qualifier() == tPUBLIC)
+      _pf.GLOBAL(symbol->name(), _pf.OBJ());
+    _pf.LABEL(symbol->name());
+    _pf.SADDR(_functionLabels.back());
+    break;
+  default:
+    error(initializer->lineno(), "invalid type for variable initialization");
   }
 }
 
@@ -635,10 +656,12 @@ void mml::postfix_writer::do_stack_alloc_node(mml::stack_alloc_node *const node,
                                               int lvl) {
   ASSERT_SAFE_EXPRESSIONS;
   node->argument()->accept(this, lvl);
-  _pf.INT(cdk::reference_type::cast(node->type())->referenced()->size()); // type size
-  _pf.MUL();            // type size * argument
-  _pf.ALLOC();          // allocate space for the array
-  _pf.SP();             // pushes the array's address
+  _pf.INT(cdk::reference_type::cast(node->type())
+              ->referenced()
+              ->size()); // type size
+  _pf.MUL();             // type size * argument
+  _pf.ALLOC();           // allocate space for the array
+  _pf.SP();              // pushes the array's address
 }
 
 //---------------------------------------------------------------------------
@@ -657,36 +680,44 @@ void mml::postfix_writer::do_function_call_node(
   std::vector<std::shared_ptr<cdk::basic_type>> arg_types;
   const auto function = node->function();
   if (function)
-    // in non recursive calls, the arguments are already stored in the node itself
-    arg_types = cdk::functional_type::cast(function->type())->input()->components();
+    // in non recursive calls, the arguments are already stored in the node
+    // itself
+    arg_types =
+        cdk::functional_type::cast(function->type())->input()->components();
   else {
     // in recursive calls, we'll want to fetch the symbol associated with
     // the deepest function we can find, and retrieve its arguments
     auto deepest_function = _functions.back();
-    arg_types = cdk::functional_type::cast(deepest_function->type())->input()->components();
+    arg_types = cdk::functional_type::cast(deepest_function->type())
+                    ->input()
+                    ->components();
   }
 
   size_t args_size = 0; // size of all the arguments in bytes
   if (node->arguments()) {
     for (int i = node->arguments()->size() - 1; i >= 0; i--) {
-      auto arg = dynamic_cast<cdk::expression_node*>(node->arguments()->node(i));
+      auto arg =
+          dynamic_cast<cdk::expression_node *>(node->arguments()->node(i));
       arg->accept(this, lvl + 2);
-      if (arg_types[i]->name() == cdk::TYPE_DOUBLE && arg->type()->name() == cdk::TYPE_INT) {
-        args_size += 4; // if we're passing an integer where a double is expected, we need to allocate 4 additional bytes
+      if (arg_types[i]->name() == cdk::TYPE_DOUBLE &&
+          arg->type()->name() == cdk::TYPE_INT) {
+        args_size += 4; // if we're passing an integer where a double is
+                        // expected, we need to allocate 4 additional bytes
         _pf.I2D();      // also need to convert integer to double
       }
       args_size += arg->type()->size();
     }
   }
 
-  // there are 3 cases now: we may want to do a recursive, non-recursive "regular", or forwarded call
+  // there are 3 cases now: we may want to do a recursive, non-recursive
+  // "regular", or forwarded call
   if (function) {
     // non-recursive calls
     _currentForwardLabel.clear();
     // if we accept a forwarded function, the label will once again be set
     function->accept(this, lvl + 2);
     if (_currentForwardLabel.empty()) // it's a "regular" non-recursive call
-        _pf.BRANCH();
+      _pf.BRANCH();
     else // it's a forwarded call
       _pf.CALL(_currentForwardLabel);
   } else {
@@ -696,19 +727,22 @@ void mml::postfix_writer::do_function_call_node(
 
   if (args_size > 0)
     _pf.TRASH(args_size); // removes no-longer-needed arguments from the stack
-  
+
   switch (node->type()->name()) {
   case cdk::TYPE_VOID:
     break;
   case cdk::TYPE_INT:
     if (_currentForwardLabel.empty()) {
-      // the second part of allowing covariance to happen (with the first one being handled in the return node's visitor)
-      // there, we make every non-main int-returning function actually return a double
-      // here, we convert that double back to an int, as it is the callee's responsibility to properly cast the return values
+      // the second part of allowing covariance to happen (with the first one
+      // being handled in the return node's visitor) there, we make every
+      // non-main int-returning function actually return a double here, we
+      // convert that double back to an int, as it is the callee's
+      // responsibility to properly cast the return values
       _pf.LDFVAL64();
       _pf.D2I();
     } else {
-      // note how in forwarded methods we don't need to do any conversion, as the return value is already an int
+      // note how in forwarded methods we don't need to do any conversion, as
+      // the return value is already an int
       _pf.LDFVAL32();
     }
     break;
@@ -724,18 +758,20 @@ void mml::postfix_writer::do_function_call_node(
     error(node->lineno(), "cannot call expression of unknown type");
   }
 
-  _currentForwardLabel.clear(); // we're done with this label, so we can clear it
+  _currentForwardLabel
+      .clear(); // we're done with this label, so we can clear it
 }
 
 //---------------------------------------------------------------------------
 
 void mml::postfix_writer::do_function_definition_node(
     mml::function_definition_node *const node, int lvl) {
-  node->main() ? processMainFunction(node, lvl) : processNonMainFunction(node, lvl);
+  node->main() ? processMainFunction(node, lvl)
+               : processNonMainFunction(node, lvl);
 }
 void mml::postfix_writer::processMainFunction(
     mml::function_definition_node *const node, int lvl) {
-  for (auto s_name: _symbolsToDeclare) {
+  for (auto s_name : _symbolsToDeclare) {
     const auto symbol = _symtab.find(s_name);
     if (symbol->qualifier() == tFOREIGN) {
       _functionsToDeclare.insert(s_name);
@@ -748,8 +784,12 @@ void mml::postfix_writer::processMainFunction(
     _pf.SALLOC(symbol->type()->size());
   }
 
-  // Note that it's ok to name the function _main, as no variable may have underscores
-  const auto main = mml::make_symbol(cdk::functional_type::create(cdk::primitive_type::create(4, cdk::TYPE_INT)), "_main", 0, tPRIVATE);
+  // Note that it's ok to name the function _main, as no variable may have
+  // underscores
+  const auto main =
+      mml::make_symbol(cdk::functional_type::create(
+                           cdk::primitive_type::create(4, cdk::TYPE_INT)),
+                       "_main", 0, tPRIVATE);
   _symtab.insert(main->name(), main);
   _functions.push_back(main);
   _functionLabels.push_back("_main");
@@ -785,7 +825,7 @@ void mml::postfix_writer::processMainFunction(
   _pf.LEAVE();
   _pf.RET();
 
-  for (auto forwarded_function: _functionsToDeclare)
+  for (auto forwarded_function : _functionsToDeclare)
     _pf.EXTERN(forwarded_function);
 }
 void mml::postfix_writer::processNonMainFunction(
@@ -804,7 +844,8 @@ void mml::postfix_writer::processNonMainFunction(
   const auto returnLabel = mklbl(++_lbl);
   _returnLabels.push_back(returnLabel);
 
-  _offset = 8; // prepare for arguments (4: remember to account for return address)
+  _offset =
+      8; // prepare for arguments (4: remember to account for return address)
 
   if (node->arguments()) {
     _inFunctionArgs = true;
@@ -838,7 +879,7 @@ void mml::postfix_writer::processNonMainFunction(
   _pf.LABEL(returnLabel);
   _pf.LEAVE();
   _pf.RET();
-  
+
   if (_inFunctionBody) {
     _functionLabels.pop_back();
     _pf.TEXT(_functionLabels.back());
