@@ -183,7 +183,7 @@ void mml::type_checker::processAdditiveBinaryExpression(
         (node->left()->is_typed(cdk::TYPE_POINTER) && node->right()->is_typed(cdk::TYPE_POINTER)) &&
         (check_compatible_ptr_types(node->left()->type(), node->right()->type()))
       ) {
-        node->type(node->left()->type());
+        node->type(cdk::primitive_type::create(4, cdk::TYPE_INT));
         return;
       }
 		}
