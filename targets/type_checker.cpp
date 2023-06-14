@@ -138,21 +138,27 @@ bool mml::type_checker::processBinaryExpression(
   node->left()->accept(this, lvl + 2);
   node->right()->accept(this, lvl + 2);
 
-  if ((node->left()->is_typed(cdk::TYPE_DOUBLE) &&
-       node->right()->is_typed(cdk::TYPE_DOUBLE)) ||
-      (node->left()->is_typed(cdk::TYPE_DOUBLE) &&
-       node->right()->is_typed(cdk::TYPE_INT)) ||
-      (node->left()->is_typed(cdk::TYPE_INT) &&
-       node->right()->is_typed(cdk::TYPE_DOUBLE))) {
-    node->type(cdk::primitive_type::create(8, cdk::TYPE_DOUBLE));
-  } else if (node->left()->is_typed(cdk::TYPE_INT) &&
-             node->right()->is_typed(cdk::TYPE_INT)) {
-    node->type(cdk::primitive_type::create(4, cdk::TYPE_INT));
-  } else if (node->left()->is_typed(cdk::TYPE_UNSPEC) &&
-             node->right()->is_typed(cdk::TYPE_UNSPEC)) {
-    node->type(cdk::primitive_type::create(4, cdk::TYPE_INT));
-    node->left()->type(cdk::primitive_type::create(4, cdk::TYPE_INT));
-    node->right()->type(cdk::primitive_type::create(4, cdk::TYPE_INT));
+  if (node->left()->is_typed(cdk::TYPE_INT) || node->left()->is_typed(cdk::TYPE_UNSPEC)) {
+    if (node->right()->is_typed(cdk::TYPE_INT))
+      node->type(cdk::primitive_type::create(4, cdk::TYPE_INT));
+    else if (node->right()->is_typed(cdk::TYPE_DOUBLE))
+      node->type(cdk::primitive_type::create(8, cdk::TYPE_DOUBLE));
+    else if (node->right()->is_typed(cdk::TYPE_UNSPEC)) {
+      node->type(cdk::primitive_type::create(4, cdk::TYPE_INT));
+      node->left()->type(cdk::primitive_type::create(4, cdk::TYPE_INT));
+      node->right()->type(cdk::primitive_type::create(4, cdk::TYPE_INT));
+    } else {
+      return false;
+    }
+  } else if (node->left()->is_typed(cdk::TYPE_DOUBLE)) {
+    if (node->right()->is_typed(cdk::TYPE_DOUBLE) || node->right()->is_typed(cdk::TYPE_INT))
+      node->type(cdk::primitive_type::create(8, cdk::TYPE_DOUBLE));
+    else if (node->right()->is_typed(cdk::TYPE_UNSPEC)) {
+      node->type(cdk::primitive_type::create(8, cdk::TYPE_DOUBLE));
+      node->right()->type(cdk::primitive_type::create(8, cdk::TYPE_DOUBLE));
+    } else {
+      return false;
+    }
   } else {
     return false;
   }
