@@ -65,6 +65,9 @@ bool mml::type_checker::check_compatible_types(std::shared_ptr<cdk::basic_type> 
       return false;
     break;
   case cdk::TYPE_UNSPEC: // useful for auto cases
+    if (t2_name == cdk::TYPE_VOID)
+      // auto x = f(), where f calls return void, is not allowed
+      return false;
     break;
   default:
     if (t1_name != t2_name)
