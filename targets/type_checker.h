@@ -38,7 +38,7 @@ protected:
   void throw_incompatible_types(std::shared_ptr<cdk::basic_type> t1,
                              std::shared_ptr<cdk::basic_type> t2,
                              bool is_return = false);
-  void hint_type(cdk::typed_node *const lvalue, cdk::typed_node *const rvalue);
+  void change_type_on_match(cdk::typed_node *const lvalue, cdk::typed_node *const rvalue);
   bool processBinaryExpression(cdk::binary_operation_node *const node, int lvl);
   void processIBinaryExpression(cdk::binary_operation_node *const node,
                                 int lvl);

@@ -106,7 +106,7 @@ void mml::type_checker::throw_incompatible_types(
   }
 }
 
-void mml::type_checker::hint_type(cdk::typed_node *const lvalue,
+void mml::type_checker::change_type_on_match(cdk::typed_node *const lvalue,
                                   cdk::typed_node *const rvalue) {
   const auto ltype = lvalue->type();
   const auto rtype = rvalue->type();
@@ -370,7 +370,7 @@ void mml::type_checker::do_assignment_node(cdk::assignment_node *const node,
   node->lvalue()->accept(this, lvl + 2);
   node->rvalue()->accept(this, lvl + 2);
 
-  hint_type(node->lvalue(), node->rvalue());
+  change_type_on_match(node->lvalue(), node->rvalue());
   const auto lval_type = node->lvalue()->type();
   const auto rval_type = node->rvalue()->type();
   throw_incompatible_types(lval_type, rval_type);
@@ -460,7 +460,7 @@ void mml::type_checker::do_declaration_node(mml::declaration_node *const node,
   if (init) {
     init->accept(this, lvl + 2);
     if (node->type()) {
-      hint_type(node, init);
+      change_type_on_match(node, init);
       throw_incompatible_types(node->type(), init->type());
       if (node->type()->name() == cdk::TYPE_UNSPEC)
         node->type(init->type());
