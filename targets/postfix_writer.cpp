@@ -804,7 +804,7 @@ void mml::postfix_writer::processMainFunction(
   _pf.LABEL("_main");
 
   // compute stack size to be reserved for local variables
-  frame_size_calculator fsc(_compiler, _symtab, main);
+  frame_size_calculator fsc(_compiler, _symtab);
   node->accept(&fsc, lvl);
   _pf.ENTER(fsc.localsize());
 
@@ -860,7 +860,7 @@ void mml::postfix_writer::processNonMainFunction(
   _pf.LABEL(functionLabel);
 
   // compute stack size to be reserved for local variables
-  frame_size_calculator fsc(_compiler, _symtab, function);
+  frame_size_calculator fsc(_compiler, _symtab);
   node->accept(&fsc, lvl);
   _pf.ENTER(fsc.localsize());
 
