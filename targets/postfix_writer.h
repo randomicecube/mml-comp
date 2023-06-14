@@ -31,8 +31,6 @@ class postfix_writer : public basic_ast_visitor {
   // while labels -- for break/continue; work like stacks
   std::vector<lbl> _whileCond, _whileEnd;
 
-  // where to jump when a return occurs or an exclusive section ends
-  std::vector<std::string> _returnLabels;
   // if we want to return to a function's segment, we need to know the label
   std::vector<std::string> _functionLabels;
   // a given forwarded function's label, as we want to call it, not branch to it
