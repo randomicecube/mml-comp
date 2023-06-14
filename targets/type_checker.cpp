@@ -244,6 +244,7 @@ void mml::type_checker::do_block_node(mml::block_node *const node, int lvl) {
 
 void mml::type_checker::do_integer_node(cdk::integer_node *const node,
                                         int lvl) {
+  ASSERT_UNSPEC;
   node->type(cdk::primitive_type::create(4, cdk::TYPE_INT));
 }
 
