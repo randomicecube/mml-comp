@@ -130,7 +130,9 @@ void mml::postfix_writer::processIDPBinaryExpression(
            !node->left()->is_typed(cdk::TYPE_POINTER)) {
     const auto ref_right =
         cdk::reference_type::cast(node->right()->type())->referenced();
-    _pf.INT(ref_right->size());
+    _pf.INT(std::max(
+        1, static_cast<int>(ref_right->size()))); // void size should be 1 when
+                                                  // doing pointer arithmetic
     _pf.MUL();
   }
 
@@ -142,7 +144,9 @@ void mml::postfix_writer::processIDPBinaryExpression(
            !node->right()->is_typed(cdk::TYPE_POINTER)) {
     const auto ref_left =
         cdk::reference_type::cast(node->left()->type())->referenced();
-    _pf.INT(ref_left->size());
+    _pf.INT(std::max(
+        1, static_cast<int>(ref_left->size()))); // void size should be 1 when
+                                                 // doing pointer arithmetic
     _pf.MUL();
   }
 }
