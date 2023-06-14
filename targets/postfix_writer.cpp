@@ -731,7 +731,6 @@ void mml::postfix_writer::do_function_call_node(
 
 void mml::postfix_writer::do_function_definition_node(
     mml::function_definition_node *const node, int lvl) {
-  ASSERT_SAFE_EXPRESSIONS;
   node->main() ? processMainFunction(node, lvl) : processNonMainFunction(node, lvl);
 }
 void mml::postfix_writer::processMainFunction(

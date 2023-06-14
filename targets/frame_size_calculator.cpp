@@ -187,6 +187,5 @@ void mml::frame_size_calculator::do_declaration_node(
 }
 void mml::frame_size_calculator::do_function_definition_node(
     mml::function_definition_node *const node, int lvl) {
-  ASSERT_SAFE_EXPRESSIONS;
   node->block()->accept(this, lvl + 2);
 }
