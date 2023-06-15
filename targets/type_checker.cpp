@@ -222,6 +222,7 @@ void mml::type_checker::processComparisonBinaryExpression(
 void mml::type_checker::processLogicalBinaryExpression(
     cdk::binary_operation_node *const node, int lvl) {
   processIBinaryExpression(node, lvl);
+  node->type(cdk::primitive_type::create(4, cdk::TYPE_INT));
 }
 
 void mml::type_checker::processEqualityBinaryExpression(
