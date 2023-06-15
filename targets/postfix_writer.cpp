@@ -112,7 +112,12 @@ void mml::postfix_writer::do_or_node(cdk::or_node *const node, int lvl) {
 
 void mml::postfix_writer::do_sequence_node(cdk::sequence_node *const node,
                                            int lvl) {
+  _returnSeen = false;
   for (size_t i = 0; i < node->size(); i++) {
+    if (_returnSeen) {
+      error(node->lineno(), "unreachable code");
+      return;
+    }
     node->node(i)->accept(this, lvl);
   }
 }
@@ -484,6 +489,8 @@ void mml::postfix_writer::do_return_node(mml::return_node *const node,
       error(node->lineno(), "invalid return type");
     }
   }
+
+  _returnSeen = true;
 
   _pf.LEAVE();
   _pf.RET();

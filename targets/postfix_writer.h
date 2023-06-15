@@ -4,8 +4,8 @@
 #include "targets/basic_ast_visitor.h"
 
 #include <cdk/emitters/basic_postfix_emitter.h>
-#include <sstream>
 #include <set>
+#include <sstream>
 
 typedef int lbl;
 
@@ -28,6 +28,7 @@ class postfix_writer : public basic_ast_visitor {
   bool _inFunctionBody = false;
   bool _inFunctionArgs = false;
   bool _mainReturnSeen = false;
+  bool _returnSeen = false;
   // while labels -- for break/continue; work like stacks
   std::vector<lbl> _whileCond, _whileEnd;
 
@@ -39,7 +40,7 @@ class postfix_writer : public basic_ast_visitor {
   // works like a stack
   std::vector<std::shared_ptr<mml::symbol>> _functions;
 
-  int _offset = 0; // current frame pointer offset -- 0 means no vars defined 
+  int _offset = 0; // current frame pointer offset -- 0 means no vars defined
 
 public:
   postfix_writer(std::shared_ptr<cdk::compiler> compiler,
@@ -67,15 +68,26 @@ private:
   }
 
 protected:
-  void processIDPBinaryExpression(cdk::binary_operation_node *const node, int lvl);
-  void processIDBinaryExpression(cdk::binary_operation_node *const node, int lvl);
-  void processGeneralLogicalBinaryExpression(cdk::binary_operation_node *const node, int lvl);
+  void processIDPBinaryExpression(cdk::binary_operation_node *const node,
+                                  int lvl);
+  void processIDBinaryExpression(cdk::binary_operation_node *const node,
+                                 int lvl);
+  void
+  processGeneralLogicalBinaryExpression(cdk::binary_operation_node *const node,
+                                        int lvl);
 
-  void processLocalVariableInitialization(std::shared_ptr<mml::symbol> symbol, cdk::expression_node *const initializer, int lvl);
-  void processGlobalVariableInitialization(std::shared_ptr<mml::symbol> symbol, cdk::expression_node *const initializer, int lvl);
+  void
+  processLocalVariableInitialization(std::shared_ptr<mml::symbol> symbol,
+                                     cdk::expression_node *const initializer,
+                                     int lvl);
+  void
+  processGlobalVariableInitialization(std::shared_ptr<mml::symbol> symbol,
+                                      cdk::expression_node *const initializer,
+                                      int lvl);
 
   void processMainFunction(mml::function_definition_node *const node, int lvl);
-  void processNonMainFunction(mml::function_definition_node *const node, int lvl);
+  void processNonMainFunction(mml::function_definition_node *const node,
+                              int lvl);
 
 public:
   // do not edit these lines
