@@ -112,9 +112,16 @@ void mml::postfix_writer::do_or_node(cdk::or_node *const node, int lvl) {
 
 void mml::postfix_writer::do_sequence_node(cdk::sequence_node *const node,
                                            int lvl) {
+  _lastBlockInstructionSeen = false;
   for (size_t i = 0; i < node->size(); i++) {
+    if (_lastBlockInstructionSeen) {
+      error(node->lineno(), "unreachable code");
+      _lastBlockInstructionSeen = false;
+      return;
+    }
     node->node(i)->accept(this, lvl);
   }
+  _lastBlockInstructionSeen = false;
 }
 
 //---------------------------------------------------------------------------
@@ -372,6 +379,7 @@ void mml::postfix_writer::do_while_node(mml::while_node *const node, int lvl) {
   _pf.JZ(mklbl(whileEndLbl));               // if false, exit the cycle
 
   node->block()->accept(this, lvl + 2); // block evaluation
+  _lastBlockInstructionSeen = false;
   _pf.JMP(mklbl(whileCondLbl));         // repeat
   _pf.ALIGN();                          // make sure we are aligned
   _pf.LABEL(mklbl(whileEndLbl)); // setting label for the end of the cycle
@@ -389,6 +397,7 @@ void mml::postfix_writer::do_if_node(mml::if_node *const node, int lvl) {
   node->condition()->accept(this, lvl);
   _pf.JZ(mklbl(lbl));
   node->block()->accept(this, lvl + 2);
+  _lastBlockInstructionSeen = false;
   _pf.LABEL(mklbl(lbl));
 }
 
@@ -404,6 +413,7 @@ void mml::postfix_writer::do_if_else_node(mml::if_else_node *const node,
   _pf.JMP(mklbl(lbl2 = ++_lbl));
   _pf.LABEL(mklbl(lbl1));
   node->elseblock()->accept(this, lvl + 2);
+  _lastBlockInstructionSeen = false;
   _pf.LABEL(mklbl(lbl1 = lbl2));
 }
 
@@ -420,6 +430,7 @@ void mml::postfix_writer::do_stop_node(mml::stop_node *const node, int lvl) {
     error(node->lineno(), "invalid stop level");
     return;
   }
+  _lastBlockInstructionSeen = true;
   const auto whileEndLbl = _whileEnd[whileLabels - stopLvl];
   _pf.JMP(mklbl(whileEndLbl));
 }
@@ -437,6 +448,7 @@ void mml::postfix_writer::do_next_node(mml::next_node *const node, int lvl) {
     error(node->lineno(), "invalid next level");
     return;
   }
+  _lastBlockInstructionSeen = true;
   const auto whileCondLbl = _whileCond[whileLabels - nextLvl];
   _pf.JMP(mklbl(whileCondLbl));
 }
@@ -485,6 +497,7 @@ void mml::postfix_writer::do_return_node(mml::return_node *const node,
     }
   }
 
+  _lastBlockInstructionSeen = true;
   _pf.LEAVE();
   _pf.RET();
 }
