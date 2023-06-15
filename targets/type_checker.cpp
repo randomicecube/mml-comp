@@ -107,7 +107,7 @@ void mml::type_checker::throw_incompatible_types(
 }
 
 void mml::type_checker::change_type_on_match(cdk::typed_node *const lvalue,
-                                  cdk::typed_node *const rvalue) {
+                                             cdk::typed_node *const rvalue) {
   const auto ltype = lvalue->type();
   const auto rtype = rvalue->type();
   if (ltype->name() == cdk::TYPE_UNSPEC && rtype->name() == cdk::TYPE_UNSPEC) {
@@ -138,7 +138,8 @@ bool mml::type_checker::processBinaryExpression(
   node->left()->accept(this, lvl + 2);
   node->right()->accept(this, lvl + 2);
 
-  if (node->left()->is_typed(cdk::TYPE_INT) || node->left()->is_typed(cdk::TYPE_UNSPEC)) {
+  if (node->left()->is_typed(cdk::TYPE_INT) ||
+      node->left()->is_typed(cdk::TYPE_UNSPEC)) {
     if (node->right()->is_typed(cdk::TYPE_INT))
       node->type(cdk::primitive_type::create(4, cdk::TYPE_INT));
     else if (node->right()->is_typed(cdk::TYPE_DOUBLE))
@@ -151,7 +152,8 @@ bool mml::type_checker::processBinaryExpression(
       return false;
     }
   } else if (node->left()->is_typed(cdk::TYPE_DOUBLE)) {
-    if (node->right()->is_typed(cdk::TYPE_DOUBLE) || node->right()->is_typed(cdk::TYPE_INT))
+    if (node->right()->is_typed(cdk::TYPE_DOUBLE) ||
+        node->right()->is_typed(cdk::TYPE_INT))
       node->type(cdk::primitive_type::create(8, cdk::TYPE_DOUBLE));
     else if (node->right()->is_typed(cdk::TYPE_UNSPEC)) {
       node->type(cdk::primitive_type::create(8, cdk::TYPE_DOUBLE));
@@ -214,6 +216,7 @@ void mml::type_checker::processAdditiveBinaryExpression(
 void mml::type_checker::processComparisonBinaryExpression(
     cdk::binary_operation_node *const node, int lvl) {
   processIDBinaryExpression(node, lvl);
+  node->type(cdk::primitive_type::create(4, cdk::TYPE_INT));
 }
 
 void mml::type_checker::processLogicalBinaryExpression(
