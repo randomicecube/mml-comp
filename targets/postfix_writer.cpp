@@ -845,7 +845,7 @@ void mml::postfix_writer::processMainFunction(
 void mml::postfix_writer::processNonMainFunction(
     mml::function_definition_node *const node, int lvl) {
   _symtab.push(); // args scope
-  auto function = make_symbol(node->type(), "@", 0, tPRIVATE);
+  auto function = mml::make_symbol(node->type(), "@", 0, tPRIVATE);
   if (_symtab.find_local(function->name())) {
     _symtab.replace(function->name(), function);
   } else {
@@ -856,6 +856,7 @@ void mml::postfix_writer::processNonMainFunction(
   const auto functionLabel = mklbl(++_lbl);
   _functionLabels.push_back(functionLabel);
 
+  const auto previous_offset = _offset;
   _offset =
       8; // prepare for arguments (4: remember to account for return address)
 
@@ -883,6 +884,7 @@ void mml::postfix_writer::processNonMainFunction(
     node->block()->accept(this, lvl + 2);
   _inFunctionBody = _previouslyInFunctionBody;
   _symtab.pop(); // leaving args scope
+  _offset = previous_offset;
 
   if (function)
     _functions.pop_back();
