@@ -27,7 +27,6 @@ void mml::postfix_writer::do_integer_node(cdk::integer_node *const node,
 }
 void mml::postfix_writer::do_double_node(cdk::double_node *const node,
                                          int lvl) {
-  const auto lbl = mklbl(++_lbl);
   if (_inFunctionBody)
     _pf.DOUBLE(node->value());
   else
@@ -230,12 +229,12 @@ void mml::postfix_writer::processGeneralLogicalBinaryExpression(
   ASSERT_SAFE_EXPRESSIONS;
   node->left()->accept(this, lvl + 2);
   if (!node->left()->is_typed(cdk::TYPE_DOUBLE) &&
-      node->is_typed(cdk::TYPE_DOUBLE))
+      node->right()->is_typed(cdk::TYPE_DOUBLE))
     _pf.I2D();
 
   node->right()->accept(this, lvl + 2);
   if (!node->right()->is_typed(cdk::TYPE_DOUBLE) &&
-      node->is_typed(cdk::TYPE_DOUBLE))
+      node->left()->is_typed(cdk::TYPE_DOUBLE))
     _pf.I2D();
 
   if (node->left()->is_typed(cdk::TYPE_DOUBLE) ||
@@ -380,8 +379,8 @@ void mml::postfix_writer::do_while_node(mml::while_node *const node, int lvl) {
 
   node->block()->accept(this, lvl + 2); // block evaluation
   _lastBlockInstructionSeen = false;
-  _pf.JMP(mklbl(whileCondLbl));         // repeat
-  _pf.ALIGN();                          // make sure we are aligned
+  _pf.JMP(mklbl(whileCondLbl));  // repeat
+  _pf.ALIGN();                   // make sure we are aligned
   _pf.LABEL(mklbl(whileEndLbl)); // setting label for the end of the cycle
 
   _symtab.pop();         // leaving current context
