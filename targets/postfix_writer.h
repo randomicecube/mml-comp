@@ -28,7 +28,7 @@ class postfix_writer : public basic_ast_visitor {
   bool _inFunctionBody = false;
   bool _inFunctionArgs = false;
   bool _mainReturnSeen = false;
-  bool _returnSeen = false;
+  bool _lastBlockInstructionSeen = false;
   // while labels -- for break/continue; work like stacks
   std::vector<lbl> _whileCond, _whileEnd;
 
@@ -64,7 +64,7 @@ private:
 
   /** Method use to print error messages. */
   void error(int lineno, std::string e) {
-    std::cerr << "[ERROR @ " << lineno << "]: " << e << std::endl;
+    std::cerr << lineno << ": " << e << std::endl;
   }
 
 protected:
