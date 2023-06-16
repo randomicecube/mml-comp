@@ -43,7 +43,7 @@
 
 %token tINPUT tWRITE tWRITELN tSIZEOF tRETURN
 %token tFOREIGN tFORWARD tPUBLIC tPRIVATE tAUTO
-%token tBEGIN tEND tARROW tNEXT tSTOP tWHILE
+%token tBEGIN tEND tARROW tNEXT tSTOP tWHILE tIF
 %token tINT_TYPE tDOUBLE_TYPE tSTRING_TYPE tVOID_TYPE tNULLPTR
 
 %type <sequence> file global_declarations declarations instructions opt_expressions expressions opt_args args
@@ -59,7 +59,7 @@
 
 /* Associativity rules */
 
-%nonassoc tIF
+%nonassoc tIFX
 %nonassoc tELIF tELSE
 
 %right '='
@@ -186,12 +186,12 @@ instruction : block                                     { $$ = $1; }
             | expressions tWRITELN                      { $$ = new mml::print_node(LINE, $1, true);  }
             ;
 
-conditional_instruction : tIF '(' expression ')' instruction %prec tIF          { $$ = new mml::if_node(LINE, $3, $5); }
+conditional_instruction : tIF '(' expression ')' instruction %prec tIFX         { $$ = new mml::if_node(LINE, $3, $5); }
                         | tIF '(' expression ')' instruction else               { $$ = new mml::if_else_node(LINE, $3, $5, $6); }
                         ;
 
 else : tELSE instruction                                                        { $$ = $2; }
-     | tELIF '(' expression ')' instruction  %prec tIF                          { $$ = new mml::if_node(LINE, $3, $5); }
+     | tELIF '(' expression ')' instruction  %prec tIFX                         { $$ = new mml::if_node(LINE, $3, $5); }
      | tELIF '(' expression ')' instruction else                                { $$ = new mml::if_else_node(LINE, $3, $5, $6); }
      ;
 
