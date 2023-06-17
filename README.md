@@ -1,5 +1,10 @@
 # MML compiler
 
+Project developed in collaboration with [Diogo Cardoso](https://github.com/D-Card)
+for our Compilers class at Técnico Lisboa, 2022/2023 spring semester.
+
+---
+
 At the beginning of development, the repository contains source code for the Simple language in which all references to MML have been replaced by MML.
 
 The steps to develop a full MML compiler imply the adaptation of:
